@@ -1,0 +1,1438 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, Authenticated } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { UserButton } from "@clerk/nextjs";
+import {
+  Plus,
+  Copy,
+  Check,
+  Edit,
+  Search,
+  Calendar,
+  Sparkles,
+  Trash2,
+  Send,
+  Upload,
+  FileText,
+  Eye,
+  EyeOff,
+  Download,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Id } from "@/convex/_generated/dataModel";
+import { toast, Toaster } from "sonner";
+
+// Enhanced Bride Type with Tier 1 features
+type Bride = {
+  _id: Id<"brides">;
+  name: string;
+  email: string;
+  weddingDate: string;
+  status: string;
+  totalPrice: number;
+  paidAmount: number;
+  stripeLink?: string;
+  token: string;
+  measurements?: {
+    bust?: number;
+    waist?: number;
+    hips?: number;
+    hem?: number;
+    hollowToHem?: number;
+  };
+  dressDetails?: {
+    designer?: string;
+    styleNumber?: string;
+    size?: string;
+    color?: string;
+  };
+};
+
+type Appointment = {
+  _id: Id<"appointments">;
+  brideId: Id<"brides">;
+  date: string;
+  type: string;
+  notes?: string;
+  status: string;
+};
+
+type Document = {
+  _id: Id<"documents">;
+  brideId: Id<"brides">;
+  title: string;
+  url: string;
+  type: string;
+  uploadedAt?: number;
+  visibleToBride: boolean;
+};
+
+export default function DashboardPage() {
+  // HOOKS
+  const brides = useQuery(api.brides.list);
+  const createBride = useMutation(api.brides.create);
+  const updateBride = useMutation(api.brides.update);
+  const updateMeasurements = useMutation(api.brides.updateMeasurements);
+  const updateDressDetails = useMutation(api.brides.updateDressDetails);
+  const addAppointment = useMutation(api.brides.addAppointment);
+  const deleteAppointment = useMutation(api.brides.deleteAppointment);
+  const addDocument = useMutation(api.brides.addDocument);
+  const updateDocument = useMutation(api.brides.updateDocument);
+  const deleteDocument = useMutation(api.brides.deleteDocument);
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditSheet, setShowEditSheet] = useState(false);
+  const [selectedBride, setSelectedBride] = useState<Bride | null>(null);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [workflowFilter, setWorkflowFilter] = useState<
+    "all" | "attention" | "payments" | "fittings"
+  >("all");
+
+  // Fetch appointments and documents for selected bride
+  const appointments = useQuery(
+    api.brides.getAppointments,
+    selectedBride ? { brideId: selectedBride._id } : "skip"
+  );
+
+  const documents = useQuery(
+    api.brides.getDocuments,
+    selectedBride ? { brideId: selectedBride._id } : "skip"
+  );
+
+  const [addFormData, setAddFormData] = useState({
+    name: "",
+    email: "",
+    weddingDate: "",
+    totalPrice: "",
+  });
+
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    email: "",
+    weddingDate: "",
+    status: "",
+    totalPrice: "",
+    paidAmount: "",
+    stripeLink: "",
+  });
+
+  const [measurementsData, setMeasurementsData] = useState({
+    bust: "",
+    waist: "",
+    hips: "",
+    hem: "",
+    hollowToHem: "",
+  });
+
+  const [dressData, setDressData] = useState({
+    designer: "",
+    styleNumber: "",
+    size: "",
+    color: "",
+  });
+
+  const [newAppointment, setNewAppointment] = useState({
+    date: "",
+    type: "Fitting",
+    notes: "",
+  });
+
+  const [newDocument, setNewDocument] = useState({
+    title: "",
+    url: "",
+    type: "Contract",
+  });
+
+  // Filter logic
+  const filteredBrides = useMemo(() => {
+    if (!brides) return [];
+
+    let filtered = brides;
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter((bride) =>
+        bride.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        bride.email.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply workflow filter
+    switch (workflowFilter) {
+      case "attention":
+        // Brides with 'Onboarding' status or no future appointments
+        filtered = filtered.filter((bride) => bride.status === "Onboarding");
+        break;
+      case "payments":
+        // Brides where paidAmount < totalPrice
+        filtered = filtered.filter((bride) => bride.paidAmount < bride.totalPrice);
+        break;
+      case "fittings":
+        // Mock logic for now - could be based on appointment dates
+        // For now, show brides in "Measurements" or "In Progress" status
+        filtered = filtered.filter(
+          (bride) =>
+            bride.status === "Measurements" || bride.status === "In Progress"
+        );
+        break;
+      case "all":
+      default:
+        // Show all active (non-completed) brides
+        filtered = filtered.filter((bride) => bride.status !== "Completed");
+        break;
+    }
+
+    return filtered;
+  }, [brides, searchQuery, workflowFilter]);
+
+  // LOADING GUARD
+  if (brides === undefined || brides === null) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-rose-50">
+        <div className="text-center animate-pulse">
+          <p className="text-stone-400 font-serif text-lg mb-2">Bridal OS</p>
+          <p className="text-stone-600">Loading your boutique...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // HANDLERS
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await createBride({
+      name: addFormData.name,
+      email: addFormData.email,
+      weddingDate: addFormData.weddingDate,
+      totalPrice: parseFloat(addFormData.totalPrice),
+    });
+    setAddFormData({ name: "", email: "", weddingDate: "", totalPrice: "" });
+    setShowAddForm(false);
+    toast.success("Client added successfully!");
+  };
+
+  const handleEditClick = (bride: Bride) => {
+    setSelectedBride(bride);
+    setEditFormData({
+      name: bride.name,
+      email: bride.email,
+      weddingDate: bride.weddingDate,
+      status: bride.status,
+      totalPrice: bride.totalPrice.toString(),
+      paidAmount: bride.paidAmount.toString(),
+      stripeLink: bride.stripeLink || "",
+    });
+    setMeasurementsData({
+      bust: bride.measurements?.bust?.toString() || "",
+      waist: bride.measurements?.waist?.toString() || "",
+      hips: bride.measurements?.hips?.toString() || "",
+      hem: bride.measurements?.hem?.toString() || "",
+      hollowToHem: bride.measurements?.hollowToHem?.toString() || "",
+    });
+    setDressData({
+      designer: bride.dressDetails?.designer || "",
+      styleNumber: bride.dressDetails?.styleNumber || "",
+      size: bride.dressDetails?.size || "",
+      color: bride.dressDetails?.color || "",
+    });
+    setActiveTab("overview");
+    setShowEditSheet(true);
+  };
+
+  const handleSaveAll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBride) return;
+
+    // Update basic info
+    await updateBride({
+      id: selectedBride._id,
+      status: editFormData.status,
+      totalPrice: parseFloat(editFormData.totalPrice),
+      paidAmount: parseFloat(editFormData.paidAmount),
+      stripeLink: editFormData.stripeLink || undefined,
+    });
+
+    // Update measurements
+    await updateMeasurements({
+      brideId: selectedBride._id,
+      measurements: {
+        bust: measurementsData.bust ? parseFloat(measurementsData.bust) : undefined,
+        waist: measurementsData.waist ? parseFloat(measurementsData.waist) : undefined,
+        hips: measurementsData.hips ? parseFloat(measurementsData.hips) : undefined,
+        hem: measurementsData.hem ? parseFloat(measurementsData.hem) : undefined,
+        hollowToHem: measurementsData.hollowToHem
+          ? parseFloat(measurementsData.hollowToHem)
+          : undefined,
+      },
+    });
+
+    // Update dress details
+    await updateDressDetails({
+      brideId: selectedBride._id,
+      dressDetails: {
+        designer: dressData.designer || undefined,
+        styleNumber: dressData.styleNumber || undefined,
+        size: dressData.size || undefined,
+        color: dressData.color || undefined,
+      },
+    });
+
+    toast.success("Changes saved successfully");
+    setShowEditSheet(false);
+    setSelectedBride(null);
+  };
+
+  // THE ROBOT ASSISTANT: Save & Notify Bride
+  const handleSaveAndNotify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBride) return;
+
+    // Save all changes first
+    await updateBride({
+      id: selectedBride._id,
+      status: editFormData.status,
+      totalPrice: parseFloat(editFormData.totalPrice),
+      paidAmount: parseFloat(editFormData.paidAmount),
+      stripeLink: editFormData.stripeLink || undefined,
+    });
+
+    await updateMeasurements({
+      brideId: selectedBride._id,
+      measurements: {
+        bust: measurementsData.bust ? parseFloat(measurementsData.bust) : undefined,
+        waist: measurementsData.waist ? parseFloat(measurementsData.waist) : undefined,
+        hips: measurementsData.hips ? parseFloat(measurementsData.hips) : undefined,
+        hem: measurementsData.hem ? parseFloat(measurementsData.hem) : undefined,
+        hollowToHem: measurementsData.hollowToHem
+          ? parseFloat(measurementsData.hollowToHem)
+          : undefined,
+      },
+    });
+
+    await updateDressDetails({
+      brideId: selectedBride._id,
+      dressDetails: {
+        designer: dressData.designer || undefined,
+        styleNumber: dressData.styleNumber || undefined,
+        size: dressData.size || undefined,
+        color: dressData.color || undefined,
+      },
+    });
+
+    // Simulate sending email notification
+    toast.success(
+      `📧 Email sent to ${selectedBride.name}: "Your dress is ${editFormData.status}! Click here to view your portal."`,
+      {
+        duration: 5000,
+      }
+    );
+
+    setShowEditSheet(false);
+    setSelectedBride(null);
+  };
+
+  const handleAddAppointment = async () => {
+    if (!selectedBride || !newAppointment.date) return;
+
+    await addAppointment({
+      brideId: selectedBride._id,
+      date: newAppointment.date,
+      type: newAppointment.type,
+      notes: newAppointment.notes || undefined,
+    });
+
+    setNewAppointment({ date: "", type: "Fitting", notes: "" });
+    toast.success("Appointment added");
+  };
+
+  const handleDeleteAppointment = async (id: Id<"appointments">) => {
+    await deleteAppointment({ id });
+    toast.success("Appointment deleted");
+  };
+
+  const handleAddDocument = async () => {
+    if (!selectedBride || !newDocument.title || !newDocument.url) {
+      toast.error("Please fill in all document fields");
+      return;
+    }
+
+    await addDocument({
+      brideId: selectedBride._id,
+      title: newDocument.title,
+      url: newDocument.url,
+      type: newDocument.type,
+      visibleToBride: false, // Default to hidden
+    });
+
+    setNewDocument({ title: "", url: "", type: "Contract" });
+    toast.success("Document uploaded");
+  };
+
+  const handleToggleVisibility = async (doc: Document) => {
+    await updateDocument({
+      id: doc._id,
+      visibleToBride: !doc.visibleToBride,
+    });
+    toast.success(
+      doc.visibleToBride
+        ? "Document hidden from bride"
+        : "Document now visible to bride"
+    );
+  };
+
+  const handleDeleteDocument = async (id: Id<"documents">) => {
+    await deleteDocument({ id });
+    toast.success("Document deleted");
+  };
+
+  const copyPortalLink = (token: string) => {
+    const link = `${window.location.origin}/p/${token}`;
+    navigator.clipboard.writeText(link);
+    setCopiedToken(token);
+    setTimeout(() => setCopiedToken(null), 2000);
+    toast.success("Portal link copied to clipboard");
+  };
+
+  const getStatusColor = (
+    status: string,
+    paidAmount: number,
+    totalPrice: number
+  ) => {
+    if (status === "Ready for Pickup" || status === "Completed") {
+      return "bg-green-100 text-green-800 border-green-200";
+    }
+    if (status === "Onboarding") {
+      return "bg-blue-50 text-blue-700 border-blue-100";
+    }
+    if (paidAmount < totalPrice) {
+      return "bg-amber-50 text-amber-800 border-amber-100";
+    }
+    return "bg-stone-100 text-stone-600 border-stone-200";
+  };
+
+  // Calculate workflow filter counts
+  const workflowCounts = useMemo(() => {
+    if (!brides) return { all: 0, attention: 0, payments: 0, fittings: 0 };
+    return {
+      all: brides.filter((b) => b.status !== "Completed").length,
+      attention: brides.filter((b) => b.status === "Onboarding").length,
+      payments: brides.filter((b) => b.paidAmount < b.totalPrice).length,
+      fittings: brides.filter(
+        (b) => b.status === "Measurements" || b.status === "In Progress"
+      ).length,
+    };
+  }, [brides]);
+
+  // Get next step for a bride
+  const getNextStep = (bride: Bride) => {
+    if (bride.status === "Onboarding") return "Needs Initial Consult";
+    if (bride.status === "Measurements") return "Schedule Fitting";
+    if (bride.status === "In Progress") return "Next Fitting";
+    if (bride.status === "Ready for Pickup") return "Ready";
+    if (bride.status === "Completed") return "Complete";
+    return "In Progress";
+  };
+
+  // RENDER
+  return (
+    <Authenticated>
+      <Toaster position="top-right" richColors />
+      <div className="min-h-screen bg-rose-50/30 font-sans text-stone-900">
+        {/* HEADER */}
+        <div className="bg-white border-b border-stone-100 sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-black rounded-none flex items-center justify-center text-white font-serif">
+                  B
+                </div>
+                <h1 className="text-2xl font-serif text-black tracking-tight">
+                  Bridal OS
+                </h1>
+              </div>
+              <UserButton afterSignOutUrl="/sign-in" />
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-10">
+          {/* QUICK ACTION BAR */}
+          <div className="mb-10 space-y-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-96">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search brides..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-11 bg-white border-stone-200 focus:ring-black focus:border-black rounded-md"
+                />
+              </div>
+
+              {/* Add Bride Button */}
+              <Button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="h-11 px-6 bg-black hover:bg-stone-800 text-white font-medium rounded-md shadow-sm w-full sm:w-auto"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Bride
+              </Button>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm">
+                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">
+                  Total Brides
+                </p>
+                <p className="text-2xl font-serif text-black">{brides.length}</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm">
+                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">
+                  Active
+                </p>
+                <p className="text-2xl font-serif text-black">
+                  {brides.filter((b) => b.status !== "Completed").length}
+                </p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm">
+                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">
+                  Revenue
+                </p>
+                <p className="text-2xl font-serif text-black">
+                  ${brides.reduce((acc, b) => acc + b.totalPrice, 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm">
+                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">
+                  Collected
+                </p>
+                <p className="text-2xl font-serif text-green-600">
+                  ${brides.reduce((acc, b) => acc + b.paidAmount, 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ADD BRIDE FORM */}
+          {showAddForm && (
+            <div className="bg-white rounded-xl shadow-sm p-8 mb-10 border border-stone-100 animate-in slide-in-from-top-2 fade-in duration-200">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-serif text-black">
+                  New Client Intake
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddForm(false)}
+                >
+                  Close
+                </Button>
+              </div>
+              <form
+                onSubmit={handleAddSubmit}
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    required
+                    value={addFormData.name}
+                    onChange={(e) =>
+                      setAddFormData({ ...addFormData, name: e.target.value })
+                    }
+                    className="bg-stone-50 border-stone-200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    value={addFormData.email}
+                    onChange={(e) =>
+                      setAddFormData({ ...addFormData, email: e.target.value })
+                    }
+                    className="bg-stone-50 border-stone-200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weddingDate">Wedding Date</Label>
+                  <Input
+                    id="weddingDate"
+                    type="date"
+                    required
+                    value={addFormData.weddingDate}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        weddingDate: e.target.value,
+                      })
+                    }
+                    className="bg-stone-50 border-stone-200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="totalPrice">Total Order Value ($)</Label>
+                  <Input
+                    id="totalPrice"
+                    type="number"
+                    required
+                    step="0.01"
+                    value={addFormData.totalPrice}
+                    onChange={(e) =>
+                      setAddFormData({
+                        ...addFormData,
+                        totalPrice: e.target.value,
+                      })
+                    }
+                    className="bg-stone-50 border-stone-200"
+                  />
+                </div>
+                <div className="md:col-span-2 pt-2">
+                  <Button
+                    type="submit"
+                    className="w-full bg-black hover:bg-stone-800 text-white h-11"
+                  >
+                    Create Client Record
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* BRIDE CARD GRID */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBrides.length === 0 ? (
+              <div className="col-span-full py-20 text-center bg-white rounded-xl border border-dashed border-stone-200">
+                <Sparkles className="w-10 h-10 text-stone-200 mx-auto mb-4" />
+                <p className="text-stone-500 font-medium">No brides found</p>
+                <p className="text-sm text-stone-400 mt-1">
+                  Get started by adding a new client.
+                </p>
+              </div>
+            ) : (
+              filteredBrides.map((bride) => {
+                const remainingBalance = bride.totalPrice - bride.paidAmount;
+                const statusColor = getStatusColor(
+                  bride.status,
+                  bride.paidAmount,
+                  bride.totalPrice
+                );
+
+                return (
+                  <div
+                    key={bride._id}
+                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-stone-100 overflow-hidden group flex flex-col"
+                  >
+                    {/* Card Header */}
+                    <div className="p-5 border-b border-stone-50">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-lg font-serif text-black leading-tight">
+                          {bride.name}
+                        </h3>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${statusColor}`}
+                        >
+                          {bride.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-stone-500">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(bride.weddingDate).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          }
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="p-5 space-y-4 flex-grow">
+                      {/* Financial Info */}
+                      <div className="space-y-2 bg-stone-50 p-3 rounded-lg">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-stone-500">Total</span>
+                          <span className="font-medium text-black">
+                            ${bride.totalPrice.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-stone-500">Paid</span>
+                          <span className="font-medium text-green-600">
+                            ${bride.paidAmount.toLocaleString()}
+                          </span>
+                        </div>
+                        {remainingBalance > 0 && (
+                          <div className="flex justify-between text-xs pt-2 border-t border-stone-200 mt-2">
+                            <span className="text-stone-500 font-medium">
+                              Balance
+                            </span>
+                            <span className="font-bold text-red-500">
+                              ${remainingBalance.toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div className="p-3 bg-stone-50 grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={() => handleEditClick(bride)}
+                        variant="outline"
+                        className="bg-white hover:bg-stone-100 text-xs h-9 border-stone-200"
+                      >
+                        <Edit className="w-3 h-3 mr-2" />
+                        Details
+                      </Button>
+                      <Button
+                        onClick={() => copyPortalLink(bride.token)}
+                        className={`text-xs h-9 ${
+                          copiedToken === bride.token
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "bg-black hover:bg-stone-800 text-white"
+                        }`}
+                      >
+                        {copiedToken === bride.token ? (
+                          <>
+                            <Check className="w-3 h-3 mr-2" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 mr-2" />
+                            Link
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* EDIT SHEET WITH 4 TABS */}
+        <Sheet open={showEditSheet} onOpenChange={setShowEditSheet}>
+          <SheetContent className="sm:max-w-2xl bg-white overflow-y-auto">
+            <SheetHeader className="mb-6">
+              <SheetTitle className="font-serif text-2xl text-black">
+                Manage Client
+              </SheetTitle>
+              <SheetDescription>
+                Robot Assistant Control Center for {selectedBride?.name}
+              </SheetDescription>
+            </SheetHeader>
+
+            {selectedBride && (
+              <form onSubmit={handleSaveAll}>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid w-full grid-cols-4 mb-6">
+                    <TabsTrigger value="overview" className="text-xs font-medium">
+                      Overview
+                    </TabsTrigger>
+                    <TabsTrigger value="dress" className="text-xs font-medium">
+                      Dress
+                    </TabsTrigger>
+                    <TabsTrigger value="appointments" className="text-xs font-medium">
+                      Appts
+                    </TabsTrigger>
+                    <TabsTrigger value="documents" className="text-xs font-medium">
+                      Docs
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* TAB 1: OVERVIEW */}
+                  <TabsContent value="overview" className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            Full Name
+                          </Label>
+                          <Input
+                            value={editFormData.name}
+                            disabled
+                            className="bg-stone-100 border-stone-200"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            Email
+                          </Label>
+                          <Input
+                            value={editFormData.email}
+                            disabled
+                            className="bg-stone-100 border-stone-200"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            Wedding Date
+                          </Label>
+                          <Input
+                            type="date"
+                            value={editFormData.weddingDate}
+                            disabled
+                            className="bg-stone-100 border-stone-200"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            Status
+                          </Label>
+                          <Select
+                            value={editFormData.status}
+                            onValueChange={(value) =>
+                              setEditFormData({ ...editFormData, status: value })
+                            }
+                          >
+                            <SelectTrigger className="bg-stone-50 border-stone-200">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Onboarding">Onboarding</SelectItem>
+                              <SelectItem value="Measurements">
+                                Measurements
+                              </SelectItem>
+                              <SelectItem value="In Progress">
+                                In Progress
+                              </SelectItem>
+                              <SelectItem value="Ready for Pickup">
+                                Ready for Pickup
+                              </SelectItem>
+                              <SelectItem value="Completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            Total Price
+                          </Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editFormData.totalPrice}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                totalPrice: e.target.value,
+                              })
+                            }
+                            className="bg-stone-50 border-stone-200"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            Paid Amount
+                          </Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editFormData.paidAmount}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                paidAmount: e.target.value,
+                              })
+                            }
+                            className="bg-stone-50 border-stone-200"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                          Stripe Payment Link
+                        </Label>
+                        <Input
+                          type="url"
+                          placeholder="https://buy.stripe.com/..."
+                          value={editFormData.stripeLink}
+                          onChange={(e) =>
+                            setEditFormData({
+                              ...editFormData,
+                              stripeLink: e.target.value,
+                            })
+                          }
+                          className="bg-stone-50 border-stone-200"
+                        />
+                        <p className="text-[10px] text-stone-400">
+                          Link for bride to make payments
+                        </p>
+                      </div>
+
+                      {/* ROBOT ASSISTANT FEATURE */}
+                      <div className="pt-4 border-t border-stone-200">
+                        <Button
+                          type="button"
+                          onClick={handleSaveAndNotify}
+                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white h-12 font-medium"
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          Save & Notify Bride
+                        </Button>
+                        <p className="text-[10px] text-stone-400 mt-2 text-center">
+                          Saves changes and sends automated email update
+                        </p>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* TAB 2: DRESS & MEASURES */}
+                  <TabsContent value="dress" className="space-y-6">
+                    <div className="space-y-6">
+                      {/* Dress Details */}
+                      <div>
+                        <h3 className="font-serif text-lg mb-4">Dress Details</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Designer
+                            </Label>
+                            <Input
+                              placeholder="Vera Wang"
+                              value={dressData.designer}
+                              onChange={(e) =>
+                                setDressData({
+                                  ...dressData,
+                                  designer: e.target.value,
+                                })
+                              }
+                              className="bg-stone-50 border-stone-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Style Number
+                            </Label>
+                            <Input
+                              placeholder="VW12345"
+                              value={dressData.styleNumber}
+                              onChange={(e) =>
+                                setDressData({
+                                  ...dressData,
+                                  styleNumber: e.target.value,
+                                })
+                              }
+                              className="bg-stone-50 border-stone-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Size Ordered
+                            </Label>
+                            <Input
+                              placeholder="8"
+                              value={dressData.size}
+                              onChange={(e) =>
+                                setDressData({ ...dressData, size: e.target.value })
+                              }
+                              className="bg-stone-50 border-stone-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Color
+                            </Label>
+                            <Input
+                              placeholder="Ivory"
+                              value={dressData.color}
+                              onChange={(e) =>
+                                setDressData({
+                                  ...dressData,
+                                  color: e.target.value,
+                                })
+                              }
+                              className="bg-stone-50 border-stone-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Measurements */}
+                      <div>
+                        <h3 className="font-serif text-lg mb-4">
+                          Measurements (inches)
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Bust
+                            </Label>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              placeholder="36"
+                              value={measurementsData.bust}
+                              onChange={(e) =>
+                                setMeasurementsData({
+                                  ...measurementsData,
+                                  bust: e.target.value,
+                                })
+                              }
+                              className="bg-stone-50 border-stone-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Waist
+                            </Label>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              placeholder="28"
+                              value={measurementsData.waist}
+                              onChange={(e) =>
+                                setMeasurementsData({
+                                  ...measurementsData,
+                                  waist: e.target.value,
+                                })
+                              }
+                              className="bg-stone-50 border-stone-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Hips
+                            </Label>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              placeholder="38"
+                              value={measurementsData.hips}
+                              onChange={(e) =>
+                                setMeasurementsData({
+                                  ...measurementsData,
+                                  hips: e.target.value,
+                                })
+                              }
+                              className="bg-stone-50 border-stone-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Hem
+                            </Label>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              placeholder="60"
+                              value={measurementsData.hem}
+                              onChange={(e) =>
+                                setMeasurementsData({
+                                  ...measurementsData,
+                                  hem: e.target.value,
+                                })
+                              }
+                              className="bg-stone-50 border-stone-200"
+                            />
+                          </div>
+                          <div className="space-y-2 col-span-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Hollow to Hem
+                            </Label>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              placeholder="58"
+                              value={measurementsData.hollowToHem}
+                              onChange={(e) =>
+                                setMeasurementsData({
+                                  ...measurementsData,
+                                  hollowToHem: e.target.value,
+                                })
+                              }
+                              className="bg-stone-50 border-stone-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* TAB 3: APPOINTMENTS */}
+                  <TabsContent value="appointments" className="space-y-6">
+                    {/* Add New Appointment */}
+                    <div className="bg-stone-50 p-4 rounded-xl border border-stone-200">
+                      <h3 className="font-serif text-lg mb-4">
+                        Schedule Appointment
+                      </h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Date
+                            </Label>
+                            <Input
+                              type="date"
+                              value={newAppointment.date}
+                              onChange={(e) =>
+                                setNewAppointment({
+                                  ...newAppointment,
+                                  date: e.target.value,
+                                })
+                              }
+                              className="bg-white border-stone-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Type
+                            </Label>
+                            <Select
+                              value={newAppointment.type}
+                              onValueChange={(value) =>
+                                setNewAppointment({
+                                  ...newAppointment,
+                                  type: value,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="bg-white border-stone-200">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Consultation">
+                                  Consultation
+                                </SelectItem>
+                                <SelectItem value="Measurements">
+                                  Measurements
+                                </SelectItem>
+                                <SelectItem value="Fitting">Fitting</SelectItem>
+                                <SelectItem value="Final Pickup">
+                                  Final Pickup
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            Notes
+                          </Label>
+                          <Input
+                            placeholder="Additional details..."
+                            value={newAppointment.notes}
+                            onChange={(e) =>
+                              setNewAppointment({
+                                ...newAppointment,
+                                notes: e.target.value,
+                              })
+                            }
+                            className="bg-white border-stone-200"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={handleAddAppointment}
+                          className="w-full bg-black hover:bg-stone-800 h-10"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Appointment
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Existing Appointments */}
+                    <div>
+                      <h3 className="font-serif text-lg mb-4">
+                        Scheduled Appointments
+                      </h3>
+                      <div className="space-y-3">
+                        {appointments === undefined ? (
+                          <p className="text-sm text-stone-400">Loading...</p>
+                        ) : appointments.length === 0 ? (
+                          <p className="text-sm text-stone-400">
+                            No appointments scheduled yet
+                          </p>
+                        ) : (
+                          appointments.map((apt) => (
+                            <div
+                              key={apt._id}
+                              className="bg-white p-4 rounded-lg border border-stone-200 flex items-start justify-between"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Calendar className="w-4 h-4 text-stone-400" />
+                                  <p className="font-medium text-sm">
+                                    {new Date(apt.date).toLocaleDateString(
+                                      "en-US",
+                                      {
+                                        weekday: "short",
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      }
+                                    )}
+                                  </p>
+                                </div>
+                                <p className="text-xs text-stone-600 font-medium">
+                                  {apt.type}
+                                </p>
+                                {apt.notes && (
+                                  <p className="text-xs text-stone-400 mt-1">
+                                    {apt.notes}
+                                  </p>
+                                )}
+                                <span className="inline-block mt-2 px-2 py-0.5 bg-stone-100 text-stone-600 text-[10px] rounded-full">
+                                  {apt.status}
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteAppointment(apt._id)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* TAB 4: DOCUMENTS (THE DIGITAL BINDER) */}
+                  <TabsContent value="documents" className="space-y-6">
+                    {/* Upload New Document */}
+                    <div className="bg-stone-50 p-4 rounded-xl border border-stone-200">
+                      <h3 className="font-serif text-lg mb-4">
+                        Upload Document
+                      </h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            Document Title
+                          </Label>
+                          <Input
+                            placeholder="e.g., Contract - May 2024"
+                            value={newDocument.title}
+                            onChange={(e) =>
+                              setNewDocument({
+                                ...newDocument,
+                                title: e.target.value,
+                              })
+                            }
+                            className="bg-white border-stone-200"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            Type
+                          </Label>
+                          <Select
+                            value={newDocument.type}
+                            onValueChange={(value) =>
+                              setNewDocument({
+                                ...newDocument,
+                                type: value,
+                              })
+                            }
+                          >
+                            <SelectTrigger className="bg-white border-stone-200">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Contract">Contract</SelectItem>
+                              <SelectItem value="Invoice">Invoice</SelectItem>
+                              <SelectItem value="Receipt">Receipt</SelectItem>
+                              <SelectItem value="Sketch">Sketch</SelectItem>
+                              <SelectItem value="Photo">Photo</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                            File URL
+                          </Label>
+                          <Input
+                            placeholder="https://... (paste file URL)"
+                            value={newDocument.url}
+                            onChange={(e) =>
+                              setNewDocument({
+                                ...newDocument,
+                                url: e.target.value,
+                              })
+                            }
+                            className="bg-white border-stone-200"
+                          />
+                          <p className="text-[10px] text-stone-400">
+                            For now, paste a public URL. File upload coming soon.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={handleAddDocument}
+                          className="w-full bg-black hover:bg-stone-800 h-10"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Add Document
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Existing Documents */}
+                    <div>
+                      <h3 className="font-serif text-lg mb-4">
+                        Document Library
+                      </h3>
+                      <div className="space-y-3">
+                        {documents === undefined ? (
+                          <p className="text-sm text-stone-400">Loading...</p>
+                        ) : documents.length === 0 ? (
+                          <p className="text-sm text-stone-400">
+                            No documents uploaded yet
+                          </p>
+                        ) : (
+                          documents.map((doc) => (
+                            <div
+                              key={doc._id}
+                              className="bg-white p-4 rounded-lg border border-stone-200"
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-start gap-3 flex-1">
+                                  <FileText className="w-5 h-5 text-stone-400 mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="font-medium text-sm text-black">
+                                      {doc.title}
+                                    </p>
+                                    <p className="text-xs text-stone-500">
+                                      {doc.type}
+                                    </p>
+                                    {doc.uploadedAt && (
+                                      <p className="text-[10px] text-stone-400 mt-1">
+                                        {new Date(
+                                          doc.uploadedAt
+                                        ).toLocaleDateString()}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteDocument(doc._id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+
+                              {/* THE LIABILITY SHIELD: Visibility Toggle */}
+                              <div className="flex items-center justify-between pt-3 border-t border-stone-100">
+                                <div className="flex items-center gap-2">
+                                  {doc.visibleToBride ? (
+                                    <Eye className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <EyeOff className="w-4 h-4 text-stone-400" />
+                                  )}
+                                  <span className="text-xs text-stone-600">
+                                    {doc.visibleToBride
+                                      ? "Bride can see this"
+                                      : "Hidden from bride"}
+                                  </span>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={
+                                    doc.visibleToBride ? "default" : "outline"
+                                  }
+                                  onClick={() => handleToggleVisibility(doc)}
+                                  className={`text-xs h-8 ${
+                                    doc.visibleToBride
+                                      ? "bg-green-600 hover:bg-green-700"
+                                      : ""
+                                  }`}
+                                >
+                                  {doc.visibleToBride
+                                    ? "Hide from Bride"
+                                    : "Show to Bride"}
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                {/* Save/Cancel Buttons */}
+                <div className="flex gap-3 pt-6 border-t border-stone-200 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowEditSheet(false)}
+                    className="flex-1 h-11"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-black hover:bg-stone-800 text-white h-11"
+                  >
+                    Save All Changes
+                  </Button>
+                </div>
+              </form>
+            )}
+          </SheetContent>
+        </Sheet>
+      </div>
+    </Authenticated>
+  );
+}
