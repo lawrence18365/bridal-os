@@ -1,21 +1,55 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
+
+const resolveOrgId = (identity: { org_id?: string | null; subject?: string | null } | null) =>
+  identity?.org_id ?? identity?.subject ?? "solo-org";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    
-    // THE FIX: Don't throw error, just return null. 
-    // This tells the frontend "Hold on, I'm checking."
+
     if (!identity) {
       return null;
     }
 
+    const orgId = resolveOrgId(identity);
+
     return await ctx.db
       .query("brides")
-      .withIndex("by_owner", (q) => q.eq("ownerId", identity.tokenIdentifier))
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
       .collect();
+  },
+});
+
+export const listByOrg = query({
+  args: { orgId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("brides")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .collect();
+  },
+});
+
+export const get = query({
+  args: { id: v.id("brides") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const bride = await ctx.db.get(args.id);
+    if (!bride) return null;
+
+    const orgId = resolveOrgId(identity);
+
+    // Verify ownership
+    if (bride.orgId !== orgId) {
+      throw new Error("Not authorized");
+    }
+
+    return bride;
   },
 });
 
@@ -25,23 +59,31 @@ export const create = mutation({
     email: v.string(),
     weddingDate: v.string(),
     totalPrice: v.number(),
-    // Optional fields for the "Premium" look
-    dressImageUrl: v.optional(v.string()),
-    estArrivalDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const orgId = resolveOrgId(identity);
     const token = Math.random().toString(36).substring(2, 15);
 
-    await ctx.db.insert("brides", {
+    const brideId = await ctx.db.insert("brides", {
       ...args,
-      ownerId: identity.tokenIdentifier,
+      orgId: orgId,
       token: token,
       status: "Onboarding",
       paidAmount: 0,
     });
+
+    // Schedule welcome email
+    const siteUrl = process.env.SITE_URL || "http://localhost:3000";
+    // await ctx.scheduler.runAfter(0, internal.emails.sendWelcomeEmail, {
+    //   brideName: args.name,
+    //   to: args.email,
+    //   portalUrl: `${siteUrl}/p/${token}`,
+    // });
+
+    return brideId;
   },
 });
 
@@ -54,6 +96,84 @@ export const getByToken = query({
       .unique();
 
     return bride;
+  },
+});
+
+export const getPortalData = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const bride = await ctx.db
+      .query("brides")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+
+    if (!bride) return null;
+
+    // Get appointments
+    const appointments = await ctx.db
+      .query("appointments")
+      .withIndex("by_bride", (q) => q.eq("brideId", bride._id))
+      .collect();
+
+    // Get visible documents
+    const allDocuments = await ctx.db
+      .query("documents")
+      .withIndex("by_bride", (q) => q.eq("brideId", bride._id))
+      .collect();
+    const documents = allDocuments.filter(doc => doc.visibleToBride);
+
+    // Get payments
+    const payments = await ctx.db
+      .query("payments")
+      .withIndex("by_bride", (q) => q.eq("brideId", bride._id))
+      .collect();
+
+    // Get settings for this org
+    const settings = await ctx.db
+      .query("settings")
+      .withIndex("by_org", (q) => q.eq("orgId", bride.orgId ?? "solo-org"))
+      .first();
+
+    // Get cover image URL if exists
+    let coverImageUrl = null;
+    if (bride.coverImageId) {
+      coverImageUrl = await ctx.storage.getUrl(bride.coverImageId);
+    }
+
+    // Get logo URL if exists
+    let logoUrl = null;
+    if (settings?.logoStorageId) {
+      logoUrl = await ctx.storage.getUrl(settings.logoStorageId);
+    }
+
+    return {
+      bride,
+      appointments,
+      documents,
+      payments: payments.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
+      settings,
+      coverImageUrl,
+      logoUrl,
+    };
+  },
+});
+
+export const confirmMeasurements = mutation({
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const bride = await ctx.db
+      .query("brides")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+
+    if (!bride) throw new Error("Bride not found");
+
+    await ctx.db.patch(bride._id, {
+      measurementsConfirmedAt: Date.now(),
+      measurementsConfirmedBy: "bride-portal",
+    });
   },
 });
 
@@ -72,10 +192,11 @@ export const update = mutation({
     }
 
     const { id, ...updates } = args;
+    const orgId = resolveOrgId(identity);
 
     // Verify ownership
     const bride = await ctx.db.get(id);
-    if (!bride || bride.ownerId !== identity.tokenIdentifier) {
+    if (!bride || bride.orgId !== orgId) {
       throw new Error("Not authorized");
     }
 
@@ -99,9 +220,11 @@ export const updateMeasurements = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const orgId = resolveOrgId(identity);
+
     // Verify ownership
     const bride = await ctx.db.get(args.brideId);
-    if (!bride || bride.ownerId !== identity.tokenIdentifier) {
+    if (!bride || bride.orgId !== orgId) {
       throw new Error("Not authorized");
     }
 
@@ -126,9 +249,11 @@ export const updateDressDetails = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const orgId = resolveOrgId(identity);
+
     // Verify ownership
     const bride = await ctx.db.get(args.brideId);
-    if (!bride || bride.ownerId !== identity.tokenIdentifier) {
+    if (!bride || bride.orgId !== orgId) {
       throw new Error("Not authorized");
     }
 
@@ -151,9 +276,11 @@ export const addAppointment = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const orgId = resolveOrgId(identity);
+
     // Verify ownership of bride
     const bride = await ctx.db.get(args.brideId);
-    if (!bride || bride.ownerId !== identity.tokenIdentifier) {
+    if (!bride || bride.orgId !== orgId) {
       throw new Error("Not authorized");
     }
 
@@ -217,13 +344,14 @@ export const updateAppointment = mutation({
     if (!identity) throw new Error("Not authenticated");
 
     const { id, ...updates } = args;
+    const orgId = resolveOrgId(identity);
 
     // Verify ownership through bride
     const appointment = await ctx.db.get(id);
     if (!appointment) throw new Error("Appointment not found");
 
     const bride = await ctx.db.get(appointment.brideId);
-    if (!bride || bride.ownerId !== identity.tokenIdentifier) {
+    if (!bride || bride.orgId !== orgId) {
       throw new Error("Not authorized");
     }
 
@@ -239,12 +367,14 @@ export const deleteAppointment = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const orgId = resolveOrgId(identity);
+
     // Verify ownership through bride
     const appointment = await ctx.db.get(args.id);
     if (!appointment) throw new Error("Appointment not found");
 
     const bride = await ctx.db.get(appointment.brideId);
-    if (!bride || bride.ownerId !== identity.tokenIdentifier) {
+    if (!bride || bride.orgId !== orgId) {
       throw new Error("Not authorized");
     }
 
@@ -257,7 +387,8 @@ export const addDocument = mutation({
   args: {
     brideId: v.id("brides"),
     title: v.string(),
-    url: v.string(),
+    url: v.optional(v.string()),
+    storageId: v.optional(v.id("_storage")),
     type: v.string(),
     visibleToBride: v.optional(v.boolean()),
   },
@@ -265,9 +396,11 @@ export const addDocument = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const orgId = resolveOrgId(identity);
+
     // Verify ownership of bride
     const bride = await ctx.db.get(args.brideId);
-    if (!bride || bride.ownerId !== identity.tokenIdentifier) {
+    if (!bride || bride.orgId !== orgId) {
       throw new Error("Not authorized");
     }
 
@@ -275,6 +408,7 @@ export const addDocument = mutation({
       brideId: args.brideId,
       title: args.title,
       url: args.url,
+      storageId: args.storageId,
       type: args.type,
       uploadedAt: Date.now(),
       visibleToBride: args.visibleToBride ?? false,
@@ -293,13 +427,14 @@ export const updateDocument = mutation({
     if (!identity) throw new Error("Not authenticated");
 
     const { id, ...updates } = args;
+    const orgId = resolveOrgId(identity);
 
     // Verify ownership through bride
     const document = await ctx.db.get(id);
     if (!document) throw new Error("Document not found");
 
     const bride = await ctx.db.get(document.brideId);
-    if (!bride || bride.ownerId !== identity.tokenIdentifier) {
+    if (!bride || bride.orgId !== orgId) {
       throw new Error("Not authorized");
     }
 
@@ -353,12 +488,14 @@ export const deleteDocument = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const orgId = resolveOrgId(identity);
+
     // Verify ownership through bride
     const document = await ctx.db.get(args.id);
     if (!document) throw new Error("Document not found");
 
     const bride = await ctx.db.get(document.brideId);
-    if (!bride || bride.ownerId !== identity.tokenIdentifier) {
+    if (!bride || bride.orgId !== orgId) {
       throw new Error("Not authorized");
     }
 

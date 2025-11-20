@@ -4,6 +4,10 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, Authenticated } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { UserButton } from "@clerk/nextjs";
+import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
+import { AddBrideModal } from "@/components/dashboard/AddBrideModal";
+import { TriedOnSection } from "@/components/dashboard/TriedOnSection";
+import Link from "next/link";
 import {
   Plus,
   Copy,
@@ -93,7 +97,7 @@ type Document = {
   _id: Id<"documents">;
   brideId: Id<"brides">;
   title: string;
-  url: string;
+  url?: string;
   type: string;
   uploadedAt?: number;
   visibleToBride: boolean;
@@ -111,6 +115,15 @@ export default function DashboardPage() {
   const addDocument = useMutation(api.brides.addDocument);
   const updateDocument = useMutation(api.brides.updateDocument);
   const deleteDocument = useMutation(api.brides.deleteDocument);
+  const bulkImportBrides = useMutation(api.import.bulkImportBrides);
+  const addPayment = useMutation(api.payments.addPayment);
+  const updatePayment = useMutation(api.payments.updatePayment);
+  const deletePayment = useMutation(api.payments.deletePayment);
+
+  // Appointment Requests
+  const pendingRequests = useQuery(api.appointmentRequests.listPending);
+  const approveRequest = useMutation(api.appointmentRequests.approve);
+  const rejectRequest = useMutation(api.appointmentRequests.reject);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditSheet, setShowEditSheet] = useState(false);
@@ -133,12 +146,7 @@ export default function DashboardPage() {
     selectedBride ? { brideId: selectedBride._id } : "skip"
   );
 
-  const [addFormData, setAddFormData] = useState({
-    name: "",
-    email: "",
-    weddingDate: "",
-    totalPrice: "",
-  });
+
 
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -176,6 +184,17 @@ export default function DashboardPage() {
     url: "",
     type: "Contract",
   });
+
+  // Check availability for new appointment (must be before any conditional logic)
+  const availability = useQuery(
+    api.appointments.checkAvailability,
+    newAppointment.date
+      ? {
+          date: new Date(newAppointment.date).toISOString(),
+          duration: 90,
+        }
+      : "skip"
+  );
 
   // Filter logic
   const filteredBrides = useMemo(() => {
@@ -219,6 +238,19 @@ export default function DashboardPage() {
     return filtered;
   }, [brides, searchQuery, workflowFilter]);
 
+  // Calculate workflow filter counts
+  const workflowCounts = useMemo(() => {
+    if (!brides) return { all: 0, attention: 0, payments: 0, fittings: 0 };
+    return {
+      all: brides.filter((b) => b.status !== "Completed").length,
+      attention: brides.filter((b) => b.status === "Onboarding").length,
+      payments: brides.filter((b) => b.paidAmount < b.totalPrice).length,
+      fittings: brides.filter(
+        (b) => b.status === "Measurements" || b.status === "In Progress"
+      ).length,
+    };
+  }, [brides]);
+
   // LOADING GUARD
   if (brides === undefined || brides === null) {
     return (
@@ -231,19 +263,36 @@ export default function DashboardPage() {
     );
   }
 
+  const activeBrides = brides.filter((b) => b.status !== "Completed");
+  const totalRevenue = brides.reduce((acc, b) => acc + b.totalPrice, 0);
+  const totalCollected = brides.reduce((acc, b) => acc + b.paidAmount, 0);
+  const collectionRate = totalRevenue
+    ? Math.round((totalCollected / totalRevenue) * 100)
+    : 0;
+  const avgBalance = activeBrides.length
+    ? Math.round(
+      activeBrides.reduce(
+        (acc, b) => acc + (b.totalPrice - b.paidAmount),
+        0
+      ) / activeBrides.length
+    )
+    : 0;
+  const upcomingRequests = pendingRequests?.length || 0;
+  const upcomingAppointments = appointments?.filter(a => new Date(a.date) > new Date()).length || 0;
+
+  const onboardingCount = brides.filter((b) => b.status === "Onboarding").length;
+  const fittingCount = brides.filter(
+    (b) => b.status === "Measurements" || b.status === "In Progress"
+  ).length;
+  const filterChips = [
+    { key: "all" as const, label: "Active", helper: `${workflowCounts.all} in motion` },
+    { key: "attention" as const, label: "Needs consult", helper: `${onboardingCount} onboarding` },
+    { key: "payments" as const, label: "Balance due", helper: `${workflowCounts.payments} owing` },
+    { key: "fittings" as const, label: "In fittings", helper: `${fittingCount} in progress` },
+  ];
+
   // HANDLERS
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await createBride({
-      name: addFormData.name,
-      email: addFormData.email,
-      weddingDate: addFormData.weddingDate,
-      totalPrice: parseFloat(addFormData.totalPrice),
-    });
-    setAddFormData({ name: "", email: "", weddingDate: "", totalPrice: "" });
-    setShowAddForm(false);
-    toast.success("Client added successfully!");
-  };
+
 
   const handleEditClick = (bride: Bride) => {
     setSelectedBride(bride);
@@ -433,29 +482,16 @@ export default function DashboardPage() {
     totalPrice: number
   ) => {
     if (status === "Ready for Pickup" || status === "Completed") {
-      return "bg-green-100 text-green-800 border-green-200";
+      return "bg-rose-50 text-rose-700 border-rose-100";
     }
     if (status === "Onboarding") {
-      return "bg-blue-50 text-blue-700 border-blue-100";
+      return "bg-stone-100 text-stone-700 border-stone-200";
     }
     if (paidAmount < totalPrice) {
-      return "bg-amber-50 text-amber-800 border-amber-100";
+      return "bg-rose-50 text-rose-700 border-rose-100";
     }
     return "bg-stone-100 text-stone-600 border-stone-200";
   };
-
-  // Calculate workflow filter counts
-  const workflowCounts = useMemo(() => {
-    if (!brides) return { all: 0, attention: 0, payments: 0, fittings: 0 };
-    return {
-      all: brides.filter((b) => b.status !== "Completed").length,
-      attention: brides.filter((b) => b.status === "Onboarding").length,
-      payments: brides.filter((b) => b.paidAmount < b.totalPrice).length,
-      fittings: brides.filter(
-        (b) => b.status === "Measurements" || b.status === "In Progress"
-      ).length,
-    };
-  }, [brides]);
 
   // Get next step for a bride
   const getNextStep = (bride: Bride) => {
@@ -471,182 +507,335 @@ export default function DashboardPage() {
   return (
     <Authenticated>
       <Toaster position="top-right" richColors />
-      <div className="min-h-screen bg-rose-50/30 font-sans text-stone-900">
+      <div className="relative min-h-screen bg-[#FDF6F9] font-sans text-stone-900">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-20 top-10 h-64 w-64 rounded-full bg-rose-200/50 blur-3xl" />
+          <div className="absolute right-6 top-20 h-64 w-64 rounded-full bg-rose-100/60 blur-3xl" />
+          <div className="absolute left-1/2 bottom-0 h-72 w-72 -translate-x-1/2 rounded-full bg-white/80 blur-3xl" />
+        </div>
+
         {/* HEADER */}
-        <div className="bg-white border-b border-stone-100 sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-black rounded-none flex items-center justify-center text-white font-serif">
-                  B
-                </div>
-                <h1 className="text-2xl font-serif text-black tracking-tight">
-                  Bridal OS
-                </h1>
+        <div className="sticky top-0 z-20 border-b border-white/70 bg-white/70 backdrop-blur">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-900 text-lg font-serif text-rose-50 shadow-lg shadow-rose-200/60">
+                B
               </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.32em] text-stone-500">
+                  Bridal OS
+                </p>
+                <p className="text-sm text-stone-500">
+                  Calm ops for modern bridal houses
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
               <UserButton afterSignOutUrl="/sign-in" />
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 py-10">
-          {/* QUICK ACTION BAR */}
-          <div className="mb-10 space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-              {/* Search Bar */}
-              <div className="relative w-full sm:w-96">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 w-4 h-4" />
-                <Input
-                  type="text"
-                  placeholder="Search brides..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-11 bg-white border-stone-200 focus:ring-black focus:border-black rounded-md"
-                />
+        <div className="relative mx-auto max-w-7xl px-6 pb-16 pt-8 md:pt-12">
+          <div className="mb-10 grid gap-6 md:grid-cols-[1.05fr_0.95fr]">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 px-6 py-7 text-rose-50 shadow-2xl shadow-rose-200/50 md:px-8 md:py-10">
+              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-rose-200/20 blur-2xl" />
+              <div className="absolute left-6 top-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-rose-100">
+                Pulse
               </div>
-
-              {/* Add Bride Button */}
-              <Button
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="h-11 px-6 bg-black hover:bg-stone-800 text-white font-medium rounded-md shadow-sm w-full sm:w-auto"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Bride
-              </Button>
+              <h1 className="mt-6 text-3xl leading-tight md:text-4xl">
+                Calm control for every bride journey
+              </h1>
+              <p className="mt-3 text-rose-100/90">
+                Orchestrate fittings, invoices, and portal moments so your team feels steady and brides feel guided.
+              </p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-rose-100/70">
+                    Active brides
+                  </p>
+                  <p className="text-2xl font-serif">{workflowCounts.all}</p>
+                  <p className="text-sm text-rose-100/80">
+                    {onboardingCount} onboarding · {fittingCount} in fittings
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-rose-100/70">
+                    Collection rate
+                  </p>
+                  <p className="text-2xl font-serif">{collectionRate}%</p>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-rose-200/90 transition-all"
+                      style={{ width: `${collectionRate}%` }}
+                    />
+                  </div>
+                  <p className="text-sm text-rose-100/80 mt-1">
+                    ${totalCollected.toLocaleString()} collected of ${totalRevenue.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-rose-50">
+                <span className="rounded-full bg-white/10 px-3 py-1">Balances · {workflowCounts.payments}</span>
+                <span className="rounded-full bg-white/10 px-3 py-1">Requests · {upcomingRequests}</span>
+                <span className="rounded-full bg-white/10 px-3 py-1">Team calm · concierge templates</span>
+              </div>
             </div>
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm">
-                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">
-                  Total Brides
-                </p>
-                <p className="text-2xl font-serif text-black">{brides.length}</p>
+            <div className="rounded-3xl border border-white/60 bg-white/80 px-6 py-6 shadow-xl shadow-rose-200/50 backdrop-blur">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-stone-500">
+                    Ops snapshot
+                  </p>
+                  <h2 className="text-xl font-serif text-stone-900">Today&apos;s priorities</h2>
+                  <p className="text-sm text-stone-600">
+                    Keep fittings flowing, balances in motion, and clients seen.
+                  </p>
+                </div>
+                <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">
+                  {upcomingRequests} requests
+                </span>
               </div>
-              <div className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm">
-                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">
-                  Active
-                </p>
-                <p className="text-2xl font-serif text-black">
-                  {brides.filter((b) => b.status !== "Completed").length}
-                </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-stone-100 bg-white px-4 py-3 shadow-sm">
+                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-stone-500">
+                    Balances
+                    <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
+                      avg ${avgBalance.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-lg font-semibold text-stone-900">
+                    ${Math.max(totalRevenue - totalCollected, 0).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-stone-600">Open across all active brides</p>
+                </div>
+                <div className="rounded-2xl border border-stone-100 bg-white px-4 py-3 shadow-sm">
+                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-stone-500">
+                    Appointments
+                    <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
+                      {upcomingRequests} pending
+                    </span>
+                  </div>
+                  <p className="mt-2 text-lg font-semibold text-stone-900">
+                    {pendingRequests?.[0]?.requestedDate
+                      ? new Date(pendingRequests[0].requestedDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                      : "No upcoming"}
+                  </p>
+                  <p className="text-sm text-stone-600">Requests awaiting approval</p>
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm">
-                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">
-                  Revenue
-                </p>
-                <p className="text-2xl font-serif text-black">
-                  ${brides.reduce((acc, b) => acc + b.totalPrice, 0).toLocaleString()}
-                </p>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm">
-                <p className="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">
-                  Collected
-                </p>
-                <p className="text-2xl font-serif text-green-600">
-                  ${brides.reduce((acc, b) => acc + b.paidAmount, 0).toLocaleString()}
-                </p>
+              <div className="mt-4 flex flex-wrap gap-3 text-sm">
+                <span className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-3 py-1 text-rose-50 shadow-sm shadow-rose-200/40">
+                  <Sparkles className="h-4 w-4" />
+                  Concierge workflows on
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1 text-stone-800">
+                  <Calendar className="h-4 w-4" />
+                  Measurements + fittings are tracked
+                </span>
               </div>
             </div>
           </div>
 
-          {/* ADD BRIDE FORM */}
-          {showAddForm && (
-            <div className="bg-white rounded-xl shadow-sm p-8 mb-10 border border-stone-100 animate-in slide-in-from-top-2 fade-in duration-200">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-serif text-black">
-                  New Client Intake
-                </h2>
+          <div className="mb-8 space-y-4 rounded-3xl border border-white/70 bg-white/80 p-4 shadow-lg shadow-rose-200/50 ring-1 ring-white/60 backdrop-blur md:p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="relative w-full md:max-w-xl">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-stone-400" />
+                <Input
+                  type="text"
+                  placeholder="Search brides, emails, or tokens..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-11 rounded-full border-stone-200 bg-white pl-10 text-sm shadow-inner shadow-rose-100/60 focus:border-rose-500 focus:ring-rose-500/20"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => setShowAddForm(true)}
+                  className="h-11 rounded-full bg-gradient-to-r from-rose-700 via-rose-600 to-rose-500 px-6 text-white shadow-lg shadow-rose-200/80 transition hover:-translate-y-[1px] hover:from-rose-800 hover:to-rose-600"
                 >
-                  Close
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add new bride
+                </Button>
+                <Button
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = ".csv";
+                    input.onchange = async (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (!file) return;
+
+                      const text = await file.text();
+                      const lines = text.split("\n").slice(1);
+                      const bridesData = lines
+                        .filter((line) => line.trim())
+                        .map((line) => {
+                          const [name, email, weddingDate, budget] = line
+                            .split(",")
+                            .map((s) => s.trim());
+                          return {
+                            name,
+                            email,
+                            weddingDate,
+                            totalPrice: parseFloat(budget) || 0,
+                          };
+                        });
+
+                      if (bridesData.length > 0) {
+                        await bulkImportBrides({ brides: bridesData });
+                        toast.success(`Imported ${bridesData.length} brides!`);
+                      }
+                    };
+                    input.click();
+                  }}
+                  variant="outline"
+                  className="h-11 rounded-full border-stone-200 px-6"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import CSV
                 </Button>
               </div>
-              <form
-                onSubmit={handleAddSubmit}
-                className="grid grid-cols-1 md:grid-cols-2 gap-6"
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    required
-                    value={addFormData.name}
-                    onChange={(e) =>
-                      setAddFormData({ ...addFormData, name: e.target.value })
-                    }
-                    className="bg-stone-50 border-stone-200"
-                  />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {filterChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  onClick={() => setWorkflowFilter(chip.key)}
+                  className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition ${workflowFilter === chip.key
+                    ? "border-rose-500 bg-gradient-to-r from-rose-700 via-rose-600 to-rose-500 text-white shadow-md shadow-rose-200/70"
+                    : "border-stone-200 bg-white/80 text-stone-800 hover:-translate-y-[1px] hover:border-rose-200 hover:bg-rose-50/60"
+                    }`}
+                  type="button"
+                >
+                  <span>{chip.label}</span>
+                  <span className="text-xs text-stone-500">
+                    {chip.helper}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* PENDING REQUESTS INBOX */}
+          {pendingRequests && pendingRequests.length > 0 && (
+            <div className="mb-8 overflow-hidden rounded-3xl border border-rose-100 bg-white/85 shadow-lg shadow-rose-200/50 backdrop-blur">
+              <div className="flex items-center justify-between border-b border-rose-100 bg-rose-50/60 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
+                  <h2 className="text-lg font-serif text-stone-900">
+                    Pending appointment requests
+                  </h2>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    required
-                    value={addFormData.email}
-                    onChange={(e) =>
-                      setAddFormData({ ...addFormData, email: e.target.value })
-                    }
-                    className="bg-stone-50 border-stone-200"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weddingDate">Wedding Date</Label>
-                  <Input
-                    id="weddingDate"
-                    type="date"
-                    required
-                    value={addFormData.weddingDate}
-                    onChange={(e) =>
-                      setAddFormData({
-                        ...addFormData,
-                        weddingDate: e.target.value,
-                      })
-                    }
-                    className="bg-stone-50 border-stone-200"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="totalPrice">Total Order Value ($)</Label>
-                  <Input
-                    id="totalPrice"
-                    type="number"
-                    required
-                    step="0.01"
-                    value={addFormData.totalPrice}
-                    onChange={(e) =>
-                      setAddFormData({
-                        ...addFormData,
-                        totalPrice: e.target.value,
-                      })
-                    }
-                    className="bg-stone-50 border-stone-200"
-                  />
-                </div>
-                <div className="md:col-span-2 pt-2">
-                  <Button
-                    type="submit"
-                    className="w-full bg-black hover:bg-stone-800 text-white h-11"
+                <span className="rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">
+                  {pendingRequests.length} new
+                </span>
+              </div>
+              <div className="divide-y divide-stone-100">
+                {pendingRequests.map((req) => (
+                  <div
+                    key={req._id}
+                    className="flex flex-col gap-3 p-6 transition-colors hover:bg-rose-50/50 md:flex-row md:items-center md:justify-between"
                   >
-                    Create Client Record
-                  </Button>
-                </div>
-              </form>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-base font-semibold text-stone-900">
+                          {req.brideName}
+                        </p>
+                        <span className="text-sm text-stone-500">•</span>
+                        <p className="text-sm text-stone-600">{req.type}</p>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-stone-600">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                          <Calendar className="h-4 w-4 text-stone-500" />
+                          {new Date(req.requestedDate).toLocaleDateString()}
+                        </span>
+                        <span className="rounded-full bg-stone-100 px-2 py-1 text-stone-600">
+                          {req.requestedTime}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={async () => {
+                          await rejectRequest({ requestId: req._id });
+                          toast.success("Request rejected");
+                        }}
+                      >
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-stone-900 text-white hover:bg-stone-800"
+                        onClick={async () => {
+                          await approveRequest({ requestId: req._id });
+                          toast.success("Request approved & appointment scheduled!");
+                        }}
+                      >
+                        Approve & Schedule
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
+          {/* Analytics Dashboard */}
+          <div className="mb-8">
+            <h2 className="mb-4 text-lg font-serif text-stone-900">Performance Analytics</h2>
+            <AnalyticsDashboard />
+          </div>
+
+          {/* Stats */}
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-white/80 bg-gradient-to-br from-white to-rose-50 p-5 shadow-md shadow-rose-100/70 backdrop-blur">
+              <p className="text-[11px] uppercase tracking-[0.26em] text-stone-500">
+                Total brides
+              </p>
+              <p className="mt-2 text-3xl font-serif text-stone-900">{brides.length}</p>
+              <p className="text-sm text-stone-600">All clients including completed</p>
+            </div>
+            <div className="rounded-2xl border border-white/80 bg-gradient-to-br from-white to-rose-50 p-5 shadow-md shadow-rose-100/70 backdrop-blur">
+              <p className="text-[11px] uppercase tracking-[0.26em] text-stone-500">
+                Active
+              </p>
+              <p className="mt-2 text-3xl font-serif text-stone-900">{activeBrides.length}</p>
+              <p className="text-sm text-stone-600">Onboarding through pickup</p>
+            </div>
+            <div className="rounded-2xl border border-white/80 bg-gradient-to-br from-white to-rose-50 p-5 shadow-md shadow-rose-100/70 backdrop-blur">
+              <p className="text-[11px] uppercase tracking-[0.26em] text-stone-500">
+                Revenue
+              </p>
+              <p className="mt-2 text-3xl font-serif text-stone-900">
+                ${totalRevenue.toLocaleString()}
+              </p>
+              <p className="text-sm text-stone-600">All booked value</p>
+            </div>
+            <div className="rounded-2xl border border-white/80 bg-gradient-to-br from-white to-rose-50 p-5 shadow-md shadow-rose-100/70 backdrop-blur">
+              <p className="text-[11px] uppercase tracking-[0.26em] text-stone-500">
+                Collected
+              </p>
+              <p className="mt-2 text-3xl font-serif text-rose-700">
+                ${totalCollected.toLocaleString()}
+              </p>
+              <p className="text-sm text-stone-600">Collection health at {collectionRate}%</p>
+            </div>
+          </div>
+
           {/* BRIDE CARD GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredBrides.length === 0 ? (
-              <div className="col-span-full py-20 text-center bg-white rounded-xl border border-dashed border-stone-200">
-                <Sparkles className="w-10 h-10 text-stone-200 mx-auto mb-4" />
-                <p className="text-stone-500 font-medium">No brides found</p>
-                <p className="text-sm text-stone-400 mt-1">
-                  Get started by adding a new client.
+              <div className="col-span-full rounded-3xl border border-dashed border-stone-200 bg-white/80 py-20 text-center backdrop-blur">
+                <Sparkles className="mx-auto mb-4 h-10 w-10 text-stone-200" />
+                <p className="font-medium text-stone-600">No brides found</p>
+                <p className="mt-1 text-sm text-stone-500">
+                  Get started by adding a new client or importing CSV.
                 </p>
               </div>
             ) : (
@@ -657,93 +846,104 @@ export default function DashboardPage() {
                   bride.paidAmount,
                   bride.totalPrice
                 );
+                const paidPercent = Math.min(
+                  100,
+                  Math.round((bride.paidAmount / bride.totalPrice) * 100)
+                );
+                const nextStep = getNextStep(bride);
 
                 return (
                   <div
                     key={bride._id}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-stone-100 overflow-hidden group flex flex-col"
+                    className="group flex flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/85 shadow-sm shadow-rose-200/40 backdrop-blur transition hover:-translate-y-[2px] hover:shadow-lg"
                   >
-                    {/* Card Header */}
-                    <div className="p-5 border-b border-stone-50">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-lg font-serif text-black leading-tight">
+                    <div className="flex items-start justify-between border-b border-stone-50 px-5 py-4">
+                      <div>
+                        <p className="text-lg font-serif text-stone-900">
                           {bride.name}
-                        </h3>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${statusColor}`}
-                        >
-                          {bride.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-stone-500">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(bride.weddingDate).toLocaleDateString(
-                          "en-US",
-                          {
+                        </p>
+                        <div className="mt-1 flex items-center gap-2 text-xs text-stone-500">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {new Date(bride.weddingDate).toLocaleDateString("en-US", {
                             month: "long",
                             day: "numeric",
                             year: "numeric",
-                          }
-                        )}
+                          })}
+                        </div>
                       </div>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${statusColor}`}
+                      >
+                        {bride.status}
+                      </span>
                     </div>
 
-                    {/* Card Body */}
-                    <div className="p-5 space-y-4 flex-grow">
-                      {/* Financial Info */}
-                      <div className="space-y-2 bg-stone-50 p-3 rounded-lg">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-stone-500">Total</span>
-                          <span className="font-medium text-black">
+                    <div className="flex flex-col gap-3 p-5">
+                      <div className="rounded-xl border border-stone-100 bg-stone-50 p-3">
+                        <div className="flex justify-between text-xs text-stone-600">
+                          <span>Total</span>
+                          <span className="font-semibold text-stone-900">
                             ${bride.totalPrice.toLocaleString()}
                           </span>
                         </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-stone-500">Paid</span>
-                          <span className="font-medium text-green-600">
+                        <div className="flex justify-between text-xs text-stone-600">
+                          <span>Paid</span>
+                          <span className="font-semibold text-stone-900">
                             ${bride.paidAmount.toLocaleString()}
                           </span>
                         </div>
-                        {remainingBalance > 0 && (
-                          <div className="flex justify-between text-xs pt-2 border-t border-stone-200 mt-2">
-                            <span className="text-stone-500 font-medium">
-                              Balance
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-rose-700 via-rose-600 to-rose-500"
+                            style={{ width: `${paidPercent}%` }}
+                          />
+                        </div>
+                        <div className="mt-1 flex items-center justify-between text-xs">
+                          <span className="text-stone-600">Paid {paidPercent}%</span>
+                          {remainingBalance > 0 ? (
+                            <span className="font-semibold text-rose-700">
+                              ${remainingBalance.toLocaleString()} due
                             </span>
-                            <span className="font-bold text-red-500">
-                              ${remainingBalance.toLocaleString()}
-                            </span>
-                          </div>
-                        )}
+                          ) : (
+                            <span className="font-semibold text-stone-800">All paid</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg border border-stone-100 bg-white px-3 py-2 text-xs text-stone-600">
+                        <span className="font-semibold text-stone-800">Next step</span>
+                        <span className="rounded-full bg-stone-900 px-3 py-1 text-[11px] font-semibold text-rose-50">
+                          {nextStep}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Card Footer */}
-                    <div className="p-3 bg-stone-50 grid grid-cols-2 gap-2">
-                      <Button
-                        onClick={() => handleEditClick(bride)}
-                        variant="outline"
-                        className="bg-white hover:bg-stone-100 text-xs h-9 border-stone-200"
-                      >
-                        <Edit className="w-3 h-3 mr-2" />
-                        Details
-                      </Button>
+                    <div className="grid grid-cols-2 gap-2 border-t border-stone-100 bg-stone-50 px-4 py-3">
+                      <Link href={`/dashboard/brides/${bride._id}`}>
+                        <Button
+                          variant="outline"
+                          className="h-9 w-full rounded-full border-stone-200 bg-white text-xs hover:bg-stone-100"
+                        >
+                          <Edit className="mr-2 h-3.5 w-3.5" />
+                          Details
+                        </Button>
+                      </Link>
                       <Button
                         onClick={() => copyPortalLink(bride.token)}
-                        className={`text-xs h-9 ${
-                          copiedToken === bride.token
-                            ? "bg-green-600 hover:bg-green-700 text-white"
-                            : "bg-black hover:bg-stone-800 text-white"
-                        }`}
+                        className={`h-9 w-full rounded-full text-xs ${copiedToken === bride.token
+                          ? "bg-rose-600 text-white hover:bg-rose-700"
+                          : "bg-stone-900 text-rose-50 hover:bg-stone-800"
+                          }`}
                       >
                         {copiedToken === bride.token ? (
                           <>
-                            <Check className="w-3 h-3 mr-2" />
+                            <Check className="mr-2 h-3.5 w-3.5" />
                             Copied
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3 h-3 mr-2" />
-                            Link
+                            <Copy className="mr-2 h-3.5 w-3.5" />
+                            Portal link
                           </>
                         )}
                       </Button>
@@ -770,7 +970,7 @@ export default function DashboardPage() {
             {selectedBride && (
               <form onSubmit={handleSaveAll}>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-4 mb-6">
+                  <TabsList className="grid w-full grid-cols-5 mb-6">
                     <TabsTrigger value="overview" className="text-xs font-medium">
                       Overview
                     </TabsTrigger>
@@ -1111,10 +1311,10 @@ export default function DashboardPage() {
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
                             <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
-                              Date
+                              Date & Time
                             </Label>
                             <Input
-                              type="date"
+                              type="datetime-local"
                               value={newAppointment.date}
                               onChange={(e) =>
                                 setNewAppointment({
@@ -1124,6 +1324,12 @@ export default function DashboardPage() {
                               }
                               className="bg-white border-stone-200"
                             />
+                            {availability && !availability.available && (
+                              <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100 flex items-center gap-2">
+                                <span className="font-bold">Conflict Detected!</span>
+                                <span>Another appointment overlaps with this time.</span>
+                              </div>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
@@ -1175,7 +1381,8 @@ export default function DashboardPage() {
                         <Button
                           type="button"
                           onClick={handleAddAppointment}
-                          className="w-full bg-black hover:bg-stone-800 h-10"
+                          disabled={availability && !availability.available}
+                          className="w-full bg-black hover:bg-stone-800 h-10 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Plus className="w-4 h-4 mr-2" />
                           Add Appointment
@@ -1375,7 +1582,7 @@ export default function DashboardPage() {
                               <div className="flex items-center justify-between pt-3 border-t border-stone-100">
                                 <div className="flex items-center gap-2">
                                   {doc.visibleToBride ? (
-                                    <Eye className="w-4 h-4 text-green-600" />
+                                    <Eye className="w-4 h-4 text-rose-600" />
                                   ) : (
                                     <EyeOff className="w-4 h-4 text-stone-400" />
                                   )}
@@ -1392,11 +1599,10 @@ export default function DashboardPage() {
                                     doc.visibleToBride ? "default" : "outline"
                                   }
                                   onClick={() => handleToggleVisibility(doc)}
-                                  className={`text-xs h-8 ${
-                                    doc.visibleToBride
-                                      ? "bg-green-600 hover:bg-green-700"
-                                      : ""
-                                  }`}
+                                  className={`text-xs h-8 ${doc.visibleToBride
+                                    ? "bg-rose-600 hover:bg-rose-700"
+                                    : ""
+                                    }`}
                                 >
                                   {doc.visibleToBride
                                     ? "Hide from Bride"
@@ -1433,6 +1639,11 @@ export default function DashboardPage() {
           </SheetContent>
         </Sheet>
       </div>
+
+      <AddBrideModal
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+      />
     </Authenticated>
   );
 }
