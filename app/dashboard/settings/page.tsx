@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, Authenticated } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
@@ -33,7 +33,7 @@ export default function SettingsPage() {
     const [logoFile, setLogoFile] = useState<File | null>(null);
 
     // Initialize form when settings load
-    useState(() => {
+    useEffect(() => {
         if (settings) {
             setFormData({
                 storeName: settings.storeName || "",
@@ -41,7 +41,7 @@ export default function SettingsPage() {
                 brandColor: settings.brandColor || "#000000",
             });
         }
-    });
+    }, [settings, user]);
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
