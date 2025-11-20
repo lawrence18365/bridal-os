@@ -7,6 +7,7 @@ import { UserButton } from "@clerk/nextjs";
 import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
 import { AddBrideModal } from "@/components/dashboard/AddBrideModal";
 import { TriedOnSection } from "@/components/dashboard/TriedOnSection";
+import { FileUploader } from "@/components/dashboard/file-uploader";
 import Link from "next/link";
 import {
   Plus,
@@ -63,6 +64,7 @@ type Bride = {
   _id: Id<"brides">;
   name: string;
   email: string;
+  phoneNumber?: string;
   weddingDate: string;
   status: string;
   totalPrice: number;
@@ -98,10 +100,39 @@ type Document = {
   brideId: Id<"brides">;
   title: string;
   url?: string;
+  storageId?: Id<"_storage">;
   type: string;
   uploadedAt?: number;
   visibleToBride: boolean;
 };
+
+// Component to handle document download/view
+function DocumentDownloadButton({ doc }: { doc: Document }) {
+  const fileUrl = useQuery(
+    api.files.getFileUrl,
+    doc.storageId ? { storageId: doc.storageId } : "skip"
+  );
+
+  const handleDownload = () => {
+    const url = doc.storageId ? fileUrl : doc.url;
+    if (url) {
+      window.open(url, "_blank");
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={handleDownload}
+      disabled={doc.storageId && !fileUrl}
+      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+    >
+      <Download className="w-4 h-4" />
+    </Button>
+  );
+}
 
 export default function DashboardPage() {
   // HOOKS
@@ -119,6 +150,11 @@ export default function DashboardPage() {
   const addPayment = useMutation(api.payments.addPayment);
   const updatePayment = useMutation(api.payments.updatePayment);
   const deletePayment = useMutation(api.payments.deletePayment);
+
+  // Alterations
+  const addAlteration = useMutation(api.alterations.addAlteration);
+  const updateAlteration = useMutation(api.alterations.updateAlteration);
+  const deleteAlteration = useMutation(api.alterations.deleteAlteration);
 
   // Appointment Requests
   const pendingRequests = useQuery(api.appointmentRequests.listPending);
@@ -146,7 +182,10 @@ export default function DashboardPage() {
     selectedBride ? { brideId: selectedBride._id } : "skip"
   );
 
-
+  const alterations = useQuery(
+    api.alterations.getAlterations,
+    selectedBride ? { brideId: selectedBride._id } : "skip"
+  );
 
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -183,6 +222,15 @@ export default function DashboardPage() {
     title: "",
     url: "",
     type: "Contract",
+  });
+
+  const [newAlteration, setNewAlteration] = useState({
+    description: "",
+    cost: "",
+    status: "Scheduled",
+    scheduledDate: "",
+    notes: "",
+    seamstress: "",
   });
 
   // Check availability for new appointment (must be before any conditional logic)
@@ -466,6 +514,45 @@ export default function DashboardPage() {
   const handleDeleteDocument = async (id: Id<"documents">) => {
     await deleteDocument({ id });
     toast.success("Document deleted");
+  };
+
+  const handleAddAlteration = async () => {
+    if (!selectedBride || !newAlteration.description) {
+      toast.error("Please fill in alteration details");
+      return;
+    }
+    await addAlteration({
+      brideId: selectedBride._id,
+      description: newAlteration.description,
+      cost: newAlteration.cost ? parseFloat(newAlteration.cost) : undefined,
+      status: newAlteration.status,
+      scheduledDate: newAlteration.scheduledDate || undefined,
+      notes: newAlteration.notes || undefined,
+      seamstress: newAlteration.seamstress || undefined,
+    });
+    setNewAlteration({
+      description: "",
+      cost: "",
+      status: "Scheduled",
+      scheduledDate: "",
+      notes: "",
+      seamstress: "",
+    });
+    toast.success("Alteration added");
+  };
+
+  const handleUpdateAlterationStatus = async (id: Id<"alterations">, status: string) => {
+    await updateAlteration({
+      id,
+      status,
+      completedDate: status === "Complete" ? new Date().toISOString() : undefined,
+    });
+    toast.success("Status updated");
+  };
+
+  const handleDeleteAlteration = async (id: Id<"alterations">) => {
+    await deleteAlteration({ id });
+    toast.success("Alteration deleted");
   };
 
   const copyPortalLink = (token: string) => {
@@ -979,6 +1066,9 @@ export default function DashboardPage() {
                     </TabsTrigger>
                     <TabsTrigger value="appointments" className="text-xs font-medium">
                       Appts
+                    </TabsTrigger>
+                    <TabsTrigger value="alterations" className="text-xs font-medium">
+                      Alterations
                     </TabsTrigger>
                     <TabsTrigger value="documents" className="text-xs font-medium">
                       Docs
@@ -1502,31 +1592,44 @@ export default function DashboardPage() {
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
-                            File URL
+                            Upload File
                           </Label>
-                          <Input
-                            placeholder="https://... (paste file URL)"
-                            value={newDocument.url}
-                            onChange={(e) =>
-                              setNewDocument({
-                                ...newDocument,
-                                url: e.target.value,
-                              })
-                            }
-                            className="bg-white border-stone-200"
+                          <FileUploader
+                            brideId={selectedBrideId}
+                            onUploadComplete={() => {
+                              toast.success("Document uploaded successfully");
+                              setNewDocument({ title: "", url: "", type: "Contract" });
+                            }}
                           />
                           <p className="text-[10px] text-stone-400">
-                            For now, paste a public URL. File upload coming soon.
+                            Supported: PDF, JPG, PNG, DOC, DOCX
                           </p>
                         </div>
-                        <Button
-                          type="button"
-                          onClick={handleAddDocument}
-                          className="w-full bg-black hover:bg-stone-800 h-10"
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Add Document
-                        </Button>
+                        <div className="pt-2 border-t border-stone-200">
+                          <p className="text-xs text-stone-500 mb-2">Or paste a URL:</p>
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="https://... (optional)"
+                              value={newDocument.url}
+                              onChange={(e) =>
+                                setNewDocument({
+                                  ...newDocument,
+                                  url: e.target.value,
+                                })
+                              }
+                              className="bg-white border-stone-200"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={handleAddDocument}
+                            disabled={!newDocument.url}
+                            className="w-full bg-stone-600 hover:bg-stone-700 h-9 mt-2"
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Add from URL
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
@@ -1556,7 +1659,7 @@ export default function DashboardPage() {
                                       {doc.title}
                                     </p>
                                     <p className="text-xs text-stone-500">
-                                      {doc.type}
+                                      {doc.type} {doc.storageId ? "(uploaded)" : "(URL)"}
                                     </p>
                                     {doc.uploadedAt && (
                                       <p className="text-[10px] text-stone-400 mt-1">
@@ -1567,15 +1670,20 @@ export default function DashboardPage() {
                                     )}
                                   </div>
                                 </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteDocument(doc._id)}
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                                <div className="flex gap-2">
+                                  {(doc.url || doc.storageId) && (
+                                    <DocumentDownloadButton doc={doc} />
+                                  )}
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteDocument(doc._id)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </div>
 
                               {/* THE LIABILITY SHIELD: Visibility Toggle */}
@@ -1612,6 +1720,205 @@ export default function DashboardPage() {
                             </div>
                           ))
                         )}
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* TAB 5: ALTERATIONS */}
+                  <TabsContent value="alterations" className="space-y-6">
+                    <div className="grid grid-cols-1 gap-6">
+                      {/* Add New Alteration */}
+                      <div className="bg-stone-50/50 p-6 rounded-xl border border-stone-100">
+                        <h3 className="font-serif text-lg mb-4">
+                          Add Alteration
+                        </h3>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Description*
+                            </Label>
+                            <Input
+                              placeholder="e.g. Hem 2 inches, take in bodice"
+                              value={newAlteration.description}
+                              onChange={(e) =>
+                                setNewAlteration({
+                                  ...newAlteration,
+                                  description: e.target.value,
+                                })
+                              }
+                              className="bg-white border-stone-200"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                                Cost
+                              </Label>
+                              <Input
+                                type="number"
+                                placeholder="150"
+                                value={newAlteration.cost}
+                                onChange={(e) =>
+                                  setNewAlteration({
+                                    ...newAlteration,
+                                    cost: e.target.value,
+                                  })
+                                }
+                                className="bg-white border-stone-200"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                                Scheduled Date
+                              </Label>
+                              <Input
+                                type="date"
+                                value={newAlteration.scheduledDate}
+                                onChange={(e) =>
+                                  setNewAlteration({
+                                    ...newAlteration,
+                                    scheduledDate: e.target.value,
+                                  })
+                                }
+                                className="bg-white border-stone-200"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Seamstress/Tailor
+                            </Label>
+                            <Input
+                              placeholder="Name"
+                              value={newAlteration.seamstress}
+                              onChange={(e) =>
+                                setNewAlteration({
+                                  ...newAlteration,
+                                  seamstress: e.target.value,
+                                })
+                              }
+                              className="bg-white border-stone-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase tracking-widest text-stone-500 font-bold">
+                              Notes
+                            </Label>
+                            <Input
+                              placeholder="Additional details..."
+                              value={newAlteration.notes}
+                              onChange={(e) =>
+                                setNewAlteration({
+                                  ...newAlteration,
+                                  notes: e.target.value,
+                                })
+                              }
+                              className="bg-white border-stone-200"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={handleAddAlteration}
+                            className="w-full bg-black hover:bg-stone-800 h-10"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Alteration
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Existing Alterations */}
+                      <div>
+                        <h3 className="font-serif text-lg mb-4">
+                          Alteration History
+                        </h3>
+                        <div className="space-y-3">
+                          {alterations === undefined ? (
+                            <p className="text-sm text-stone-400">Loading...</p>
+                          ) : alterations.length === 0 ? (
+                            <p className="text-sm text-stone-400">
+                              No alterations tracked yet
+                            </p>
+                          ) : (
+                            alterations.map((alt) => (
+                              <div
+                                key={alt._id}
+                                className="bg-white p-4 rounded-lg border border-stone-200"
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    <p className="font-medium text-sm text-black">
+                                      {alt.description}
+                                    </p>
+                                    <div className="flex gap-4 mt-2 text-xs text-stone-500">
+                                      {alt.cost && <span>${alt.cost}</span>}
+                                      {alt.seamstress && <span>By: {alt.seamstress}</span>}
+                                      {alt.scheduledDate && (
+                                        <span>
+                                          Scheduled: {new Date(alt.scheduledDate).toLocaleDateString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {alt.notes && (
+                                      <p className="text-xs text-stone-400 mt-2">
+                                        {alt.notes}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteAlteration(alt._id)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-3 border-t border-stone-100">
+                                  <span
+                                    className={`text-xs px-2 py-1 rounded-full ${
+                                      alt.status === "Complete"
+                                        ? "bg-green-100 text-green-700"
+                                        : alt.status === "In Progress"
+                                        ? "bg-blue-100 text-blue-700"
+                                        : "bg-stone-100 text-stone-700"
+                                    }`}
+                                  >
+                                    {alt.status}
+                                  </span>
+                                  {alt.status !== "Complete" && (
+                                    <div className="flex gap-2">
+                                      {alt.status === "Scheduled" && (
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleUpdateAlterationStatus(alt._id, "In Progress")
+                                          }
+                                          className="text-xs h-7 bg-blue-600 hover:bg-blue-700"
+                                        >
+                                          Start Work
+                                        </Button>
+                                      )}
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleUpdateAlterationStatus(alt._id, "Complete")
+                                        }
+                                        className="text-xs h-7 bg-green-600 hover:bg-green-700"
+                                      >
+                                        Mark Complete
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       </div>
                     </div>
                   </TabsContent>

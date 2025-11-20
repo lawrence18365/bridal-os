@@ -14,6 +14,7 @@ export default defineSchema({
     token: v.string(),
     name: v.string(),
     email: v.string(),
+    phoneNumber: v.optional(v.string()),
     weddingDate: v.string(),
     status: v.string(),
     totalPrice: v.number(),
@@ -130,5 +131,20 @@ export default defineSchema({
     rating: v.optional(v.number()), // 1-5
     photoUrl: v.optional(v.string()), // Photo of bride in dress
     date: v.number(), // timestamp
+  }).index("by_bride", ["brideId"]),
+
+  // Alterations Tracking
+  alterations: defineTable({
+    brideId: v.id("brides"),
+    description: v.string(), // e.g., "Hem 2 inches, take in bodice"
+    cost: v.optional(v.number()),
+    status: v.string(), // "Scheduled" | "In Progress" | "Complete"
+    scheduledDate: v.optional(v.string()), // ISO date string
+    completedDate: v.optional(v.string()), // ISO date string
+    notes: v.optional(v.string()),
+    beforePhotoId: v.optional(v.id("_storage")),
+    afterPhotoId: v.optional(v.id("_storage")),
+    seamstress: v.optional(v.string()), // Who did the work
+    createdAt: v.number(), // timestamp
   }).index("by_bride", ["brideId"]),
 });

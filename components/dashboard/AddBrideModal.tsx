@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, DollarSign, Mail, User, Sparkles, Loader2 } from "lucide-react";
+import { Calendar, DollarSign, Mail, User, Sparkles, Loader2, Phone } from "lucide-react";
 import { toast } from "sonner";
 
 interface AddBrideModalProps {
@@ -28,6 +28,7 @@ export function AddBrideModal({ isOpen, onClose }: AddBrideModalProps) {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
+        phoneNumber: "",
         weddingDate: "",
         totalPrice: "",
     });
@@ -40,6 +41,7 @@ export function AddBrideModal({ isOpen, onClose }: AddBrideModalProps) {
             await createBride({
                 name: formData.name,
                 email: formData.email,
+                phoneNumber: formData.phoneNumber || undefined,
                 weddingDate: formData.weddingDate,
                 totalPrice: parseFloat(formData.totalPrice),
             });
@@ -48,7 +50,7 @@ export function AddBrideModal({ isOpen, onClose }: AddBrideModalProps) {
                 duration: 5000,
             });
 
-            setFormData({ name: "", email: "", weddingDate: "", totalPrice: "" });
+            setFormData({ name: "", email: "", phoneNumber: "", weddingDate: "", totalPrice: "" });
             onClose();
         } catch (error) {
             toast.error("Failed to add bride. Please try again.");
@@ -109,6 +111,22 @@ export function AddBrideModal({ isOpen, onClose }: AddBrideModalProps) {
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Phone Number Input */}
+                        <div className="space-y-2">
+                            <Label htmlFor="phone" className="text-xs font-semibold uppercase tracking-wider text-stone-500">Phone Number (Optional)</Label>
+                            <div className="relative group">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 group-focus-within:text-rose-500 transition-colors" />
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    placeholder="(555) 123-4567"
+                                    className="pl-10 h-11 rounded-xl border-stone-200 bg-stone-50/50 focus:bg-white focus:border-rose-500 focus:ring-rose-500/20 transition-all"
+                                    value={formData.phoneNumber}
+                                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                                 />
                             </div>
                         </div>

@@ -57,6 +57,7 @@ export const create = mutation({
   args: {
     name: v.string(),
     email: v.string(),
+    phoneNumber: v.optional(v.string()),
     weddingDate: v.string(),
     totalPrice: v.number(),
   },
@@ -77,11 +78,11 @@ export const create = mutation({
 
     // Schedule welcome email
     const siteUrl = process.env.SITE_URL || "http://localhost:3000";
-    // await ctx.scheduler.runAfter(0, internal.emails.sendWelcomeEmail, {
-    //   brideName: args.name,
-    //   to: args.email,
-    //   portalUrl: `${siteUrl}/p/${token}`,
-    // });
+    await ctx.scheduler.runAfter(0, internal.emails.sendWelcomeEmail, {
+      brideName: args.name,
+      to: args.email,
+      portalUrl: `${siteUrl}/p/${token}`,
+    });
 
     return brideId;
   },

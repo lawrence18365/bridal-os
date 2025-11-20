@@ -144,14 +144,14 @@ export const sendPaymentReminders = internalMutation({
             const portalUrl = `${getSiteUrl()}/p/${bride.token}`;
 
             // Schedule the email
-            // await ctx.scheduler.runAfter(0, internal.emails.sendPaymentReminder, {
-            //     to: bride.email,
-            //     brideName: bride.name,
-            //     amount: payment.amount,
-            //     dueDate: payment.dueDate,
-            //     stripeLink: bride.stripeLink,
-            //     portalUrl,
-            // });
+            await ctx.scheduler.runAfter(0, internal.emails.sendPaymentReminder, {
+                to: bride.email,
+                brideName: bride.name,
+                amount: payment.amount,
+                dueDate: payment.dueDate,
+                stripeLink: bride.stripeLink,
+                portalUrl,
+            });
 
             // Mark reminder as sent
             await ctx.db.patch(payment._id, {
@@ -187,12 +187,12 @@ export const markAsPaid = internalMutation({
         if (bride) {
             const portalUrl = `${process.env.SITE_URL || 'http://localhost:3000'}/p/${bride.token}`;
 
-            // await ctx.scheduler.runAfter(0, internal.emails.sendBrideNotification, {
-            //     to: bride.email,
-            //     brideName: bride.name,
-            //     portalUrl,
-            //     message: `We received your payment of $${payment.amount.toLocaleString()}. Thank you!`,
-            // });
+            await ctx.scheduler.runAfter(0, internal.emails.sendBrideNotification, {
+                to: bride.email,
+                brideName: bride.name,
+                portalUrl,
+                message: `We received your payment of $${payment.amount.toLocaleString()}. Thank you!`,
+            });
         }
     },
 });

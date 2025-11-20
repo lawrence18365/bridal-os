@@ -90,12 +90,12 @@ export const checkAndSendReminders = internalMutation({
             if (!bride || !bride.email) continue;
 
             // Send email
-            // await ctx.scheduler.runAfter(0, internal.emails.sendAppointmentReminder, {
-            //   to: bride.email,
-            //   brideName: bride.name,
-            //   appointmentDate: appt.date,
-            //   appointmentType: appt.type,
-            // });
+            await ctx.scheduler.runAfter(0, internal.emails.sendAppointmentReminder, {
+              to: bride.email,
+              brideName: bride.name,
+              appointmentDate: appt.date,
+              appointmentType: appt.type,
+            });
 
             await ctx.db.patch(appt._id, {
                 reminderSent: true,

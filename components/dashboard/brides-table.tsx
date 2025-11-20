@@ -7,7 +7,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Check, AlertCircle, Calendar, Copy } from "lucide-react";
+import { Edit, Check, AlertCircle, Calendar, Copy, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
 
@@ -17,6 +17,7 @@ type Bride = {
     _id: Id<"brides">;
     name: string;
     email: string;
+    phoneNumber?: string;
     weddingDate: string;
     status: string;
     totalPrice: number;
@@ -132,6 +133,16 @@ export function BridesTable({ brides, onEdit, onCopyPortalLink, copiedToken }: B
                                             <span className="text-xs text-stone-500">
                                                 {bride.email}
                                             </span>
+                                            {bride.phoneNumber && (
+                                                <a
+                                                    href={`tel:${bride.phoneNumber}`}
+                                                    className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 mt-0.5"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <Phone className="w-3 h-3" />
+                                                    {bride.phoneNumber}
+                                                </a>
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell>
