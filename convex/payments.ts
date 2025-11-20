@@ -7,11 +7,7 @@ const resolveOrgId = (identity: { org_id?: string | null; subject?: string | nul
 
 // Helper to get site URL with validation
 const getSiteUrl = () => {
-    const url = process.env.SITE_URL || 'http://localhost:3000';
-    if (url.includes('localhost')) {
-        console.warn('⚠️ SITE_URL is set to localhost. Payment reminder emails will have local URLs!');
-    }
-    return url;
+    return process.env.SITE_URL || 'http://localhost:3000';
 };
 
 // Get all payments for a bride
@@ -40,6 +36,16 @@ export const addPayment = mutation({
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) throw new Error("Not authenticated");
         const orgId = resolveOrgId(identity);
+
+        // Validation
+        if (args.amount <= 0) {
+            throw new Error("Payment amount must be greater than 0");
+        }
+
+        const dueDate = new Date(args.dueDate);
+        if (isNaN(dueDate.getTime())) {
+            throw new Error("Invalid due date");
+        }
 
         // Verify ownership
         const bride = await ctx.db.get(args.brideId);
@@ -72,6 +78,18 @@ export const updatePayment = mutation({
         const orgId = resolveOrgId(identity);
 
         const { id, ...updates } = args;
+
+        // Validation
+        if (updates.amount !== undefined && updates.amount <= 0) {
+            throw new Error("Payment amount must be greater than 0");
+        }
+
+        if (updates.dueDate) {
+            const dueDate = new Date(updates.dueDate);
+            if (isNaN(dueDate.getTime())) {
+                throw new Error("Invalid due date");
+            }
+        }
 
         // Verify ownership through bride
         const payment = await ctx.db.get(id);
@@ -134,8 +152,6 @@ export const sendPaymentReminders = internalMutation({
             );
         });
 
-        console.log(`Found ${paymentsToRemind.length} payments due in 3 days`);
-
         // Send reminders for each payment
         for (const payment of paymentsToRemind) {
             const bride = await ctx.db.get(payment.brideId);
@@ -157,8 +173,6 @@ export const sendPaymentReminders = internalMutation({
             await ctx.db.patch(payment._id, {
                 reminderSentAt: Date.now(),
             });
-
-            console.log(`Payment reminder sent to ${bride.name} for $${payment.amount}`);
         }
     },
 });

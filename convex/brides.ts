@@ -65,6 +65,22 @@ export const create = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    // Validation
+    if (!args.name || args.name.trim().length === 0) {
+      throw new Error("Name is required");
+    }
+    if (!args.email || !args.email.includes("@")) {
+      throw new Error("Valid email is required");
+    }
+    if (args.totalPrice < 0) {
+      throw new Error("Price cannot be negative");
+    }
+
+    const weddingDate = new Date(args.weddingDate);
+    if (isNaN(weddingDate.getTime())) {
+      throw new Error("Invalid wedding date");
+    }
+
     const orgId = resolveOrgId(identity);
     const token = Math.random().toString(36).substring(2, 15);
 
@@ -223,6 +239,16 @@ export const updateMeasurements = mutation({
 
     const orgId = resolveOrgId(identity);
 
+    // Validation - ensure measurements are positive if provided
+    const { bust, waist, hips, hem, hollowToHem } = args.measurements;
+    if ((bust !== undefined && bust <= 0) ||
+        (waist !== undefined && waist <= 0) ||
+        (hips !== undefined && hips <= 0) ||
+        (hem !== undefined && hem <= 0) ||
+        (hollowToHem !== undefined && hollowToHem <= 0)) {
+      throw new Error("Measurements must be positive numbers");
+    }
+
     // Verify ownership
     const bride = await ctx.db.get(args.brideId);
     if (!bride || bride.orgId !== orgId) {
@@ -278,6 +304,16 @@ export const addAppointment = mutation({
     if (!identity) throw new Error("Not authenticated");
 
     const orgId = resolveOrgId(identity);
+
+    // Validation
+    const apptDate = new Date(args.date);
+    if (isNaN(apptDate.getTime())) {
+      throw new Error("Invalid appointment date");
+    }
+
+    if (!args.type || args.type.trim().length === 0) {
+      throw new Error("Appointment type is required");
+    }
 
     // Verify ownership of bride
     const bride = await ctx.db.get(args.brideId);

@@ -156,6 +156,8 @@ export function AddBrideModal({ isOpen, onClose }: AddBrideModalProps) {
                                     <Input
                                         id="price"
                                         type="number"
+                                        min="0"
+                                        step="0.01"
                                         placeholder="2500"
                                         className="pl-10 h-11 rounded-xl border-stone-200 bg-stone-50/50 focus:bg-white focus:border-rose-500 focus:ring-rose-500/20 transition-all"
                                         value={formData.totalPrice}

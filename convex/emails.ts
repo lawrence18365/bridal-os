@@ -60,8 +60,6 @@ export const sendAppointmentReminder = internalAction({
                 console.error("Error sending email:", error);
                 throw new Error("Failed to send email");
             }
-
-            console.log("Email sent successfully:", data);
         } catch (err) {
             console.error("Failed to send email:", err);
             // Don't throw error to avoid retrying infinitely if it's a config issue

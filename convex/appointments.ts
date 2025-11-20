@@ -79,11 +79,8 @@ export const checkAndSendReminders = internalMutation({
         });
 
         if (upcomingAppointments.length === 0) {
-            console.log("No reminders to send this hour.");
             return;
         }
-
-        console.log(`Found ${upcomingAppointments.length} appointments to remind.`);
 
         for (const appt of upcomingAppointments) {
             const bride = await ctx.db.get(appt.brideId);
