@@ -7,7 +7,9 @@ import {
   LayoutDashboard,
   ShieldCheck,
   Sparkles,
+  Check,
 } from "lucide-react";
+import { ROICalculator } from "@/components/ROICalculator";
 
 const features = [
   {
@@ -69,6 +71,12 @@ export default function Home() {
           </div>
           <div className="hidden items-center gap-3 text-sm font-medium text-stone-700 md:flex">
             <Link
+              href="/pricing"
+              className="rounded-full px-4 py-2 transition hover:bg-white hover:shadow-sm"
+            >
+              Pricing
+            </Link>
+            <Link
               href="/sign-in"
               className="rounded-full px-4 py-2 transition hover:bg-white hover:shadow-sm"
             >
@@ -78,7 +86,7 @@ export default function Home() {
               href="/sign-up"
               className="group inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2 text-rose-50 shadow-lg shadow-rose-200/60 transition hover:-translate-y-[1px] hover:bg-stone-800"
             >
-              Book a demo
+              Start Free Trial
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </Link>
           </div>
@@ -86,7 +94,7 @@ export default function Home() {
             href="/sign-up"
             className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2 text-sm font-semibold text-rose-50 shadow-lg shadow-rose-200/60 transition hover:-translate-y-[1px] hover:bg-stone-800 md:hidden"
           >
-            Book a demo
+            Start Free Trial
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -96,7 +104,7 @@ export default function Home() {
         <div className="flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500 shadow-sm backdrop-blur">
             <ShieldCheck className="h-4 w-4 text-rose-500" />
-            Trusted by modern bridal boutiques
+            Trusted by 100+ bridal boutiques
           </div>
           <div className="space-y-4">
             <h1 className="text-4xl leading-[1.05] text-stone-900 sm:text-5xl md:text-6xl">
@@ -116,7 +124,7 @@ export default function Home() {
               href="/sign-up"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-stone-900 px-6 py-3 text-base font-semibold text-rose-50 shadow-lg shadow-rose-200/70 transition hover:-translate-y-[1px] hover:bg-stone-800"
             >
-              Start free pilot
+              Start 14-Day Free Trial
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
@@ -391,7 +399,7 @@ export default function Home() {
                 href="/sign-up"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-base font-semibold text-stone-900 shadow-lg shadow-rose-200/60 transition hover:-translate-y-[1px]"
               >
-                Book a demo
+                Start Free Trial
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
@@ -401,6 +409,227 @@ export default function Home() {
                 Explore the product
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ROI Calculator */}
+      <section className="border-t border-white/10 py-20">
+        <div className="mx-auto max-w-3xl px-6">
+          <ROICalculator />
+        </div>
+      </section>
+
+      {/* Comparison Table */}
+      <section className="border-t border-white/10 py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mb-12 text-center">
+            <h2 className="text-4xl font-bold text-rose-50">
+              Why boutiques choose Bridal OS
+            </h2>
+            <p className="mt-4 text-lg text-rose-100">
+              See how we compare to spreadsheets and generic CRMs
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="p-4 text-left text-sm font-semibold text-rose-100"></th>
+                  <th className="p-4 text-center">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-600 to-rose-500 px-4 py-2 text-sm font-bold text-white shadow-lg">
+                      <Sparkles className="h-4 w-4" />
+                      Bridal OS
+                    </div>
+                  </th>
+                  <th className="p-4 text-center text-sm font-medium text-rose-200">
+                    Spreadsheets
+                  </th>
+                  <th className="p-4 text-center text-sm font-medium text-rose-200">
+                    Generic CRM
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {[
+                  {
+                    feature: "Beautiful bride portals",
+                    bridal: true,
+                    spreadsheet: false,
+                    crm: false,
+                  },
+                  {
+                    feature: "Automated email reminders",
+                    bridal: true,
+                    spreadsheet: false,
+                    crm: "Manual",
+                  },
+                  {
+                    feature: "Payment tracking & schedules",
+                    bridal: true,
+                    spreadsheet: "Manual",
+                    crm: "Basic",
+                  },
+                  {
+                    feature: "Alterations management",
+                    bridal: true,
+                    spreadsheet: false,
+                    crm: false,
+                  },
+                  {
+                    feature: "Built for bridal shops",
+                    bridal: true,
+                    spreadsheet: false,
+                    crm: false,
+                  },
+                  {
+                    feature: "Document storage",
+                    bridal: true,
+                    spreadsheet: false,
+                    crm: "Extra cost",
+                  },
+                  {
+                    feature: "Appointment scheduling",
+                    bridal: true,
+                    spreadsheet: false,
+                    crm: "Basic",
+                  },
+                  {
+                    feature: "Setup time",
+                    bridal: "5 minutes",
+                    spreadsheet: "Hours",
+                    crm: "Weeks",
+                  },
+                  {
+                    feature: "Industry benchmarks",
+                    bridal: true,
+                    spreadsheet: false,
+                    crm: false,
+                  },
+                ].map((row, idx) => (
+                  <tr key={idx} className="hover:bg-white/5">
+                    <td className="p-4 text-rose-100">{row.feature}</td>
+                    <td className="p-4 text-center">
+                      {typeof row.bridal === "boolean" ? (
+                        row.bridal ? (
+                          <Check className="mx-auto h-5 w-5 text-emerald-400" />
+                        ) : (
+                          <span className="text-rose-300/40">—</span>
+                        )
+                      ) : (
+                        <span className="text-sm font-medium text-rose-50">
+                          {row.bridal}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      {typeof row.spreadsheet === "boolean" ? (
+                        row.spreadsheet ? (
+                          <Check className="mx-auto h-5 w-5 text-emerald-400" />
+                        ) : (
+                          <span className="text-rose-300/40">—</span>
+                        )
+                      ) : (
+                        <span className="text-sm text-rose-200">
+                          {row.spreadsheet}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      {typeof row.crm === "boolean" ? (
+                        row.crm ? (
+                          <Check className="mx-auto h-5 w-5 text-emerald-400" />
+                        ) : (
+                          <span className="text-rose-300/40">—</span>
+                        )
+                      ) : (
+                        <span className="text-sm text-rose-200">{row.crm}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-12 text-center">
+            <Link
+              href="/sign-up"
+              className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-8 py-4 text-lg font-semibold text-stone-900 shadow-lg transition hover:-translate-y-[1px]"
+            >
+              Start Free Trial
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="border-t border-white/10 py-20">
+        <div className="mx-auto max-w-4xl px-6">
+          <div className="mb-12 text-center">
+            <h2 className="text-4xl font-bold text-rose-50">
+              Frequently asked questions
+            </h2>
+            <p className="mt-4 text-lg text-rose-100">
+              Everything you need to know about Bridal OS
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {[
+              {
+                q: "Is there a free trial?",
+                a: "Yes! All plans come with a 14-day free trial. No credit card required to start. You can explore the full product, add brides, and test all features before deciding.",
+              },
+              {
+                q: "Can I cancel anytime?",
+                a: "Absolutely. Cancel anytime with one click from your account settings. No contracts, no cancellation fees. If you cancel, you'll have access until the end of your billing period.",
+              },
+              {
+                q: "What counts as an 'active bride'?",
+                a: "An active bride is anyone who hasn't picked up their dress yet. Once marked as 'Completed', they no longer count toward your limit. This means you can serve unlimited brides over time.",
+              },
+              {
+                q: "How does billing work?",
+                a: "We charge monthly or annually (save 20% with annual). You can upgrade, downgrade, or cancel at any time. If you go over your bride limit, we'll notify you and help you upgrade smoothly.",
+              },
+              {
+                q: "Do you offer refunds?",
+                a: "Yes. If you're not happy within the first 30 days, we'll give you a full refund, no questions asked. We want you to love Bridal OS or get your money back.",
+              },
+              {
+                q: "Can I import my existing bride data?",
+                a: "Yes! Professional and Enterprise plans include CSV import. We also offer free data migration assistance for Enterprise customers. Our team will help you get set up smoothly.",
+              },
+            ].map((faq, idx) => (
+              <div
+                key={idx}
+                className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+              >
+                <h3 className="mb-2 text-lg font-semibold text-rose-50">
+                  {faq.q}
+                </h3>
+                <p className="text-rose-100">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-rose-100">
+              Still have questions?{" "}
+              <a
+                href="mailto:hello@bridal-os.com"
+                className="font-semibold text-rose-50 hover:underline"
+              >
+                Email us
+              </a>{" "}
+              or{" "}
+              <Link href="/pricing" className="font-semibold text-rose-50 hover:underline">
+                view pricing details
+              </Link>
+            </p>
           </div>
         </div>
       </section>
