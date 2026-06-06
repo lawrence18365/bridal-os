@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { generatePortalToken } from "./tokens";
 
 const resolveOrgId = (identity: { org_id?: string | null; subject?: string | null } | null) =>
   identity?.org_id ?? identity?.subject ?? "solo-org";
@@ -82,7 +83,7 @@ export const create = mutation({
     }
 
     const orgId = resolveOrgId(identity);
-    const token = Math.random().toString(36).substring(2, 15);
+    const token = generatePortalToken();
 
     const brideId = await ctx.db.insert("brides", {
       ...args,
@@ -178,6 +179,7 @@ export const getPortalData = query({
 export const confirmMeasurements = mutation({
   args: {
     token: v.string(),
+    confirmedBy: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const bride = await ctx.db
@@ -189,7 +191,7 @@ export const confirmMeasurements = mutation({
 
     await ctx.db.patch(bride._id, {
       measurementsConfirmedAt: Date.now(),
-      measurementsConfirmedBy: "bride-portal",
+      measurementsConfirmedBy: args.confirmedBy ?? "bride-portal",
     });
   },
 });

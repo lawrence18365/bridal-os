@@ -16,9 +16,9 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
-  title: "Bridal OS | Calm command center for modern bridal studios",
+  title: "Bridal OS | The bride-facing layer for Bridal Live boutiques",
   description:
-    "Bridal OS organizes fittings, payments, and timelines so boutiques deliver a serene, transparent experience.",
+    "Bridal OS is an add-on for bridal boutiques that runs alongside Bridal Live. It organizes fittings, payments, timelines, reminders, and documents into a private portal for every bride. It does not replace your POS or inventory.",
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, Authenticated } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
@@ -32,16 +32,19 @@ export default function SettingsPage() {
     const [uploading, setUploading] = useState(false);
     const [logoFile, setLogoFile] = useState<File | null>(null);
 
-    // Initialize form when settings load
-    useEffect(() => {
-        if (settings) {
-            setFormData({
-                storeName: settings.storeName || "",
-                supportEmail: settings.supportEmail || user?.user?.primaryEmailAddress?.emailAddress || "",
-                brandColor: settings.brandColor || "#000000",
-            });
-        }
-    }, [settings, user]);
+    // Seed the editable form from settings as soon as they load. Adjusting
+    // state during render (keyed on the settings object identity) is React's
+    // recommended pattern for "derive initial state from async data" and
+    // avoids the cascading re-renders of setState-inside-useEffect.
+    const [seededFrom, setSeededFrom] = useState<typeof settings>(undefined);
+    if (settings && settings !== seededFrom) {
+        setSeededFrom(settings);
+        setFormData({
+            storeName: settings.storeName || "",
+            supportEmail: settings.supportEmail || user?.user?.primaryEmailAddress?.emailAddress || "",
+            brandColor: settings.brandColor || "#000000",
+        });
+    }
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

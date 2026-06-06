@@ -1,5 +1,5 @@
 import { mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { generatePortalToken } from "./tokens";
 
 export const seed = mutation({
     args: {},
@@ -23,7 +23,7 @@ export const seed = mutation({
             status: "In Progress",
             totalPrice: 2000,
             paidAmount: 1000,
-            token: Math.random().toString(36).substring(7),
+            token: generatePortalToken(),
             orgId: orgId,
             measurementsConfirmedAt: Date.now() - (10 * 24 * 60 * 60 * 1000), // 10 days ago
         });

@@ -4,13 +4,27 @@ import { internal } from "./_generated/api";
 import Stripe from "stripe";
 
 export const handleWebhook = httpAction(async (ctx, request) => {
+    // Fail safe on misconfiguration: never process a webhook without both the
+    // API key and the signing secret. Treating "no secret configured" as
+    // anything other than a hard server error would let unsigned/forged
+    // payloads mark payments as paid.
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!secretKey || !webhookSecret) {
+        console.error(
+            "Stripe webhook rejected: STRIPE_SECRET_KEY and/or STRIPE_WEBHOOK_SECRET is not configured."
+        );
+        return new Response("Stripe webhook not configured", { status: 500 });
+    }
+
     const signature = request.headers.get("stripe-signature");
 
     if (!signature) {
         return new Response("Missing signature", { status: 400 });
     }
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    const stripe = new Stripe(secretKey, {
         apiVersion: "2023-10-16",
     } as any);
 
@@ -21,7 +35,7 @@ export const handleWebhook = httpAction(async (ctx, request) => {
         event = stripe.webhooks.constructEvent(
             payload,
             signature,
-            process.env.STRIPE_WEBHOOK_SECRET!
+            webhookSecret
         );
     } catch (err) {
         console.error(`Webhook signature verification failed.`, err);

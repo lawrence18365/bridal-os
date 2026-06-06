@@ -104,19 +104,21 @@ export default function Home() {
         <div className="flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500 shadow-sm backdrop-blur">
             <ShieldCheck className="h-4 w-4 text-rose-500" />
-            Trusted by 100+ bridal boutiques
+            Works alongside Bridal Live
           </div>
           <div className="space-y-4">
             <h1 className="text-4xl leading-[1.05] text-stone-900 sm:text-5xl md:text-6xl">
-              Your bridal studio&apos;s
+              The bride-facing layer
               <span className="block font-semibold text-stone-900">
-                calm command center
+                on top of Bridal Live
               </span>
             </h1>
             <p className="max-w-2xl text-lg leading-relaxed text-stone-700 md:text-xl">
-              Bridal OS keeps every bride, fitting, invoice, and message flowing
-              together. Give your team a serene workspace and your brides a
-              luxurious, transparent experience.
+              Keep Bridal Live for your point of sale, inventory, special orders,
+              and accounting. Bridal OS adds the modern, bride-facing layer on
+              top &mdash; one calm place for each bride&apos;s timeline, fittings,
+              payment schedule, reminders, and documents. It&apos;s an add-on, not
+              a replacement.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -138,18 +140,22 @@ export default function Home() {
             <div className="flex flex-col gap-2 rounded-2xl border border-stone-100 bg-white/80 px-4 py-4 shadow-sm shadow-rose-200/40 backdrop-blur">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                 <Sparkles className="h-4 w-4 text-rose-500" />
-                Happier brides
+                One bride link
               </div>
-              <p className="font-serif text-3xl text-stone-900">98%</p>
-              <p className="text-sm text-stone-600">Portal engagement rate</p>
+              <p className="font-serif text-2xl text-stone-900">Private portal</p>
+              <p className="text-sm text-stone-600">
+                Timeline, payments, fittings &amp; documents
+              </p>
             </div>
             <div className="flex flex-col gap-2 rounded-2xl border border-stone-100 bg-white/80 px-4 py-4 shadow-sm shadow-rose-200/40 backdrop-blur">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">
                 <Clock3 className="h-4 w-4 text-amber-600" />
-                Admin saved
+                No rip &amp; replace
               </div>
-              <p className="font-serif text-3xl text-stone-900">6 hrs</p>
-              <p className="text-sm text-stone-600">Per bride on average</p>
+              <p className="font-serif text-2xl text-stone-900">Add-on</p>
+              <p className="text-sm text-stone-600">
+                Bridal Live keeps running your back office
+              </p>
             </div>
           </div>
         </div>
@@ -251,8 +257,9 @@ export default function Home() {
             </h2>
           </div>
           <p className="max-w-xl text-stone-600">
-            Bridal OS blends warmth with rigor. Every touchpoint feels curated,
-              while operations hum quietly in the background.
+            Bridal OS covers everything the bride sees and touches between the
+            sale and the pickup &mdash; while Bridal Live keeps running your POS,
+            inventory, and special orders.
             </p>
           </div>
 
@@ -290,11 +297,13 @@ export default function Home() {
               Guide every bride with clarity from day one to &ldquo;I do&rdquo;
             </h2>
             <p className="text-rose-100/90">
-              Replace scattered spreadsheets, sticky notes, and endless follow
-              ups. Bridal OS keeps each bride on a serene, transparent path.
+              Replace the scattered spreadsheets, sticky notes, and group texts
+              you use to track each bride &mdash; while Bridal Live keeps running
+              your POS and inventory. Bridal OS keeps each bride on a calm,
+              transparent path.
             </p>
             <div className="inline-flex items-center gap-2 rounded-full bg-rose-100/10 px-4 py-2 text-sm font-semibold text-rose-100 ring-1 ring-rose-200/30">
-              2x faster onboarding · 40% fewer last-minute calls
+              Set up in an afternoon · Sits on top of Bridal Live
             </div>
           </div>
           <div className="space-y-5">
@@ -324,55 +333,52 @@ export default function Home() {
         <div className="grid gap-10 rounded-3xl border border-white/80 bg-white/90 px-6 py-10 shadow-2xl shadow-rose-200/60 backdrop-blur md:grid-cols-[1.15fr_0.85fr] md:px-10 md:py-12">
           <div className="space-y-4">
             <p className="text-xs uppercase tracking-[0.3em] text-stone-500">
-              Proof it works
+              What it&apos;s for
             </p>
             <h2 className="text-3xl leading-tight text-stone-900 md:text-4xl">
-              &ldquo;Our brides feel guided and our team breathes easier.&rdquo;
+              Keep your back office. Modernize the bride experience.
             </h2>
             <p className="text-lg text-stone-700">
-              Boutique owners use Bridal OS to coordinate stylists, tailors, and
-              finance without losing the artistry. The result: smoother fittings
-              and brides who feel pampered every step of the way.
+              Bridal Live already handles your point of sale, inventory, and
+              special orders. Bridal OS sits on top to coordinate stylists,
+              tailors, and payments &mdash; and gives each bride a private portal
+              so she always knows what&apos;s next, without a single extra phone
+              call to your team.
             </p>
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-rose-200/60" />
-              <div>
-                <p className="font-semibold text-stone-900">
-                  Amaya Chen, Founder
-                </p>
-                <p className="text-stone-600">Maison Aria Bridal</p>
-              </div>
-            </div>
+            <p className="text-sm text-stone-500">
+              We&apos;re onboarding our first boutiques now. Join the pilot and
+              help shape the product.
+            </p>
           </div>
           <div className="space-y-4 rounded-2xl bg-gradient-to-br from-stone-900 to-stone-800 p-6 text-rose-50 shadow-lg shadow-rose-200/50">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-rose-200/80">
-                  Boutique impact
+                  What Bridal OS handles
                 </p>
-                <p className="font-serif text-2xl">Month 1 with Bridal OS</p>
+                <p className="font-serif text-2xl">The bride-facing layer</p>
               </div>
-              <div className="rounded-full bg-emerald-100/10 px-3 py-1 text-xs font-semibold text-emerald-100 ring-1 ring-emerald-200/30">
-                Verified
+              <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-rose-100 ring-1 ring-rose-200/30">
+                Add-on
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-sm">
-                <span className="text-rose-100/80">No-shows reduced</span>
-                <span className="text-lg font-semibold text-rose-50">-32%</span>
+                <span className="text-rose-100/80">Bride portal &amp; timeline</span>
+                <Check className="h-5 w-5 text-emerald-400" />
               </div>
               <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-sm">
-                <span className="text-rose-100/80">Invoices paid on time</span>
-                <span className="text-lg font-semibold text-rose-50">+41%</span>
+                <span className="text-rose-100/80">Payment schedules &amp; reminders</span>
+                <Check className="h-5 w-5 text-emerald-400" />
               </div>
               <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-sm">
-                <span className="text-rose-100/80">Team context switching</span>
-                <span className="text-lg font-semibold text-rose-50">-48%</span>
+                <span className="text-rose-100/80">Fittings, alterations &amp; documents</span>
+                <Check className="h-5 w-5 text-emerald-400" />
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm text-rose-200/90">
               <ShieldCheck className="h-4 w-4 text-rose-300" />
-              SOC2-ready infrastructure with secure bride portals.
+              Secure, token-based bride portals. Your POS data stays in Bridal Live.
             </div>
           </div>
         </div>
@@ -425,10 +431,12 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="mb-12 text-center">
             <h2 className="text-4xl font-bold text-rose-50">
-              Why boutiques choose Bridal OS
+              What Bridal OS adds on top of Bridal Live
             </h2>
             <p className="mt-4 text-lg text-rose-100">
-              See how we compare to spreadsheets and generic CRMs
+              Bridal Live keeps running your POS, inventory, and special orders.
+              Here&apos;s how the bride-facing layer compares to tracking brides in
+              spreadsheets or a generic CRM.
             </p>
           </div>
 
@@ -478,7 +486,7 @@ export default function Home() {
                     crm: false,
                   },
                   {
-                    feature: "Built for bridal shops",
+                    feature: "Works alongside Bridal Live & your POS",
                     bridal: true,
                     spreadsheet: false,
                     crm: false,
@@ -580,6 +588,10 @@ export default function Home() {
           <div className="space-y-6">
             {[
               {
+                q: "Does Bridal OS replace Bridal Live or my POS?",
+                a: "No. Bridal OS is an add-on, not a replacement. Keep Bridal Live for point of sale, inventory, special orders, and accounting. Bridal OS handles the bride-facing side: the private portal, timeline, fittings, alterations, payment schedules, reminders, and documents. The two run side by side.",
+              },
+              {
                 q: "Is there a free trial?",
                 a: "Yes! All plans come with a 14-day free trial. No credit card required to start. You can explore the full product, add brides, and test all features before deciding.",
               },
@@ -593,7 +605,7 @@ export default function Home() {
               },
               {
                 q: "How does billing work?",
-                a: "We charge monthly or annually (save 20% with annual). You can upgrade, downgrade, or cancel at any time. If you go over your bride limit, we'll notify you and help you upgrade smoothly.",
+                a: "Simple monthly billing. You can upgrade, downgrade, or cancel at any time. If you go over your bride limit, we'll notify you and help you upgrade smoothly.",
               },
               {
                 q: "Do you offer refunds?",
@@ -601,7 +613,7 @@ export default function Home() {
               },
               {
                 q: "Can I import my existing bride data?",
-                a: "Yes! Professional and Enterprise plans include CSV import. We also offer free data migration assistance for Enterprise customers. Our team will help you get set up smoothly.",
+                a: "Yes! Professional and Studio plans include CSV import, so you can bring over the brides you're already tracking. Bridal OS runs alongside Bridal Live — it doesn't pull from or change your POS data.",
               },
             ].map((faq, idx) => (
               <div

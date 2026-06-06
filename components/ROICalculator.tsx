@@ -8,8 +8,10 @@ export function ROICalculator() {
   const [hoursPerBride, setHoursPerBride] = useState(3);
   const [hourlyRate, setHourlyRate] = useState(50);
 
-  // Calculate savings
-  const timeSavedPerBride = hoursPerBride * 0.6; // Bridal OS saves ~60% of admin time
+  // Illustrative estimate only. 0.6 is an assumed admin-time reduction used to
+  // help boutiques sketch potential savings — it is not a measured result.
+  const ASSUMED_ADMIN_REDUCTION = 0.6;
+  const timeSavedPerBride = hoursPerBride * ASSUMED_ADMIN_REDUCTION;
   const totalTimeSavedPerMonth = timeSavedPerBride * bridesPerMonth;
   const moneySavedPerMonth = totalTimeSavedPerMonth * hourlyRate;
   const yearlyROI = moneySavedPerMonth * 12 - 49 * 12; // $49/month plan
@@ -18,10 +20,11 @@ export function ROICalculator() {
     <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm">
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-rose-50">
-          Calculate your ROI
+          Estimate your time savings
         </h3>
         <p className="mt-2 text-rose-100">
-          See how much time and money Bridal OS saves your boutique
+          A quick, illustrative estimate of the admin time Bridal OS could free
+          up &mdash; adjust the sliders to your boutique.
         </p>
       </div>
 
@@ -130,7 +133,8 @@ export function ROICalculator() {
       </div>
 
       <p className="mt-4 text-center text-sm text-rose-200">
-        Based on industry averages, Bridal OS reduces admin time by ~60%
+        Illustrative estimate using an assumed ~60% admin-time reduction. Actual
+        results vary by boutique &mdash; this is not a guarantee.
       </p>
     </div>
   );

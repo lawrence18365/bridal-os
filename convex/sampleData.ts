@@ -1,10 +1,12 @@
 import { mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { generatePortalToken } from "./tokens";
 
 const resolveOrgId = (identity: { org_id?: string | null; subject?: string | null } | null) =>
   identity?.org_id ?? identity?.subject ?? "solo-org";
 
-// Create sample bride with appointments, payments, and tasks
+// Create sample bride with appointments, payments, alterations, and tasks.
+// Every inserted record below must match convex/schema.ts exactly — Convex
+// validates writes against the schema, so unknown fields will throw.
 export const createSampleData = mutation({
   args: {},
   handler: async (ctx) => {
@@ -25,7 +27,7 @@ export const createSampleData = mutation({
     }
 
     // Create sample bride
-    const token = Math.random().toString(36).substring(2, 15);
+    const token = generatePortalToken();
     const weddingDate = new Date();
     weddingDate.setMonth(weddingDate.getMonth() + 6); // 6 months from now
 
@@ -39,9 +41,12 @@ export const createSampleData = mutation({
       totalPrice: 3500,
       paidAmount: 1500,
       status: "In Progress",
-      designer: "Vera Wang",
-      style: "Ball Gown",
-      notes: "This is a sample bride to help you explore Bridal OS. Feel free to edit or delete!",
+      dressDetails: {
+        designer: "Vera Wang",
+        styleNumber: "VW-Sample",
+        size: "8",
+        color: "Ivory",
+      },
     });
 
     // Add sample appointments
@@ -53,7 +58,6 @@ export const createSampleData = mutation({
       date: firstFitting.toISOString(),
       type: "First Fitting",
       status: "Scheduled",
-      duration: 60,
       notes: "Initial measurements and fitting",
     });
 
@@ -65,7 +69,6 @@ export const createSampleData = mutation({
       date: finalFitting.toISOString(),
       type: "Final Fitting",
       status: "Scheduled",
-      duration: 45,
       notes: "Final adjustments before pickup",
     });
 
@@ -89,7 +92,7 @@ export const createSampleData = mutation({
       brideId,
       amount: 1000,
       dueDate: nextPayment.toISOString().split("T")[0],
-      type: "Second Payment",
+      type: "Installment",
       status: "Pending",
     });
 
@@ -100,7 +103,7 @@ export const createSampleData = mutation({
       brideId,
       amount: 1000,
       dueDate: finalPayment.toISOString().split("T")[0],
-      type: "Final Payment",
+      type: "Balance",
       status: "Pending",
     });
 
@@ -113,31 +116,31 @@ export const createSampleData = mutation({
       scheduledDate: firstFitting.toISOString().split("T")[0],
       seamstress: "Maria",
       notes: "Bride is 5'4\", needs 2 inches off the hem",
+      createdAt: Date.now(),
     });
 
     await ctx.db.insert("alterations", {
       brideId,
       description: "Bodice fitting",
       cost: 200,
-      status: "Pending",
+      status: "Scheduled",
       notes: "Take in at waist, minor bust adjustment",
+      createdAt: Date.now(),
     });
 
     // Add sample tasks
     await ctx.db.insert("tasks", {
       brideId,
       title: "Order veil accessories",
-      status: "Pending",
-      dueDate: nextPayment.toISOString().split("T")[0],
-      priority: "Medium",
+      isCompleted: false,
+      order: 0,
     });
 
     await ctx.db.insert("tasks", {
       brideId,
       title: "Send care instructions",
-      status: "Pending",
-      dueDate: finalPayment.toISOString().split("T")[0],
-      priority: "Low",
+      isCompleted: false,
+      order: 1,
     });
 
     return brideId;

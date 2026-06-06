@@ -1,6 +1,7 @@
 "use node";
 
 import { action, internalAction } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Resend } from "resend";
 
@@ -175,6 +176,24 @@ export const sendBrideNotification = internalAction({
         } catch (err) {
             console.error("Failed to send notification:", err);
         }
+    },
+});
+
+// Public, authenticated wrapper so staff can trigger a bride notification
+// from the dashboard. Internal actions cannot be called directly from the
+// client, so this delegates to the internal action above.
+export const notifyBride = action({
+    args: {
+        to: v.string(),
+        brideName: v.string(),
+        portalUrl: v.string(),
+        message: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Not authenticated");
+
+        await ctx.runAction(internal.emails.sendBrideNotification, args);
     },
 });
 

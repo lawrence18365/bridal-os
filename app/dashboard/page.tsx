@@ -1595,7 +1595,7 @@ export default function DashboardPage() {
                             Upload File
                           </Label>
                           <FileUploader
-                            brideId={selectedBrideId}
+                            brideId={selectedBride._id}
                             onUploadComplete={() => {
                               toast.success("Document uploaded successfully");
                               setNewDocument({ title: "", url: "", type: "Contract" });

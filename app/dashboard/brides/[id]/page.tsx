@@ -34,7 +34,7 @@ export default function BrideCommandCenter({
     const addDocument = useMutation(api.brides.addDocument);
     const updateDocument = useMutation(api.brides.updateDocument);
     const deleteDocument = useMutation(api.brides.deleteDocument);
-    const sendBrideNotification = useAction(api.emails.sendBrideNotification);
+    const sendBrideNotification = useAction(api.emails.notifyBride);
 
     const [copied, setCopied] = useState(false);
     const [calendarCopied, setCalendarCopied] = useState(false);
@@ -334,16 +334,8 @@ export default function BrideCommandCenter({
                             <Select
                                 value={bride.status}
                                 onValueChange={async (value) => {
-                                    const result = await updateBride({ id: bride._id, status: value });
-
-                                    // WORKFLOW 4: Frontend notification for automated workflows
-                                    if (result?.automationTriggered) {
-                                        toast.success("🎉 Status updated & Bride notified via Email", {
-                                            duration: 5000,
-                                        });
-                                    } else {
-                                        toast.success("Status updated");
-                                    }
+                                    await updateBride({ id: bride._id, status: value });
+                                    toast.success("Status updated");
                                 }}
                             >
                                 <SelectTrigger className="w-full bg-white">

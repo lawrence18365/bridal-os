@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { generatePortalToken } from "./tokens";
 
 const resolveOrgId = (identity: { org_id?: string | null; subject?: string | null } | null) =>
     identity?.org_id ?? identity?.subject ?? "solo-org";
@@ -26,8 +27,8 @@ export const bulkImportBrides = mutation({
 
         for (const brideData of args.brides) {
             try {
-                // Generate unique token
-                const token = Math.random().toString(36).substring(2, 15);
+                // Generate unique, unguessable portal token
+                const token = generatePortalToken();
 
                 // Insert bride
                 const brideId = await ctx.db.insert("brides", {

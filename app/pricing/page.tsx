@@ -51,22 +51,19 @@ const plans = [
     popular: true,
   },
   {
-    name: "Enterprise",
+    name: "Studio",
     price: 199,
-    description: "For established boutiques & multi-location shops",
+    description:
+      "For high-volume boutiques. Multi-location & team roles are on our roadmap — tell us what you need.",
     features: [
       "Unlimited active brides",
       "Everything in Professional, plus:",
-      "Multi-location support",
-      "Team roles & permissions",
-      "Custom workflows",
-      "Dedicated account manager",
-      "Phone support",
-      "Custom integrations",
-      "SLA guarantee",
-      "Data migration assistance",
+      "Concierge data migration",
+      "Priority support",
+      "Early access to new features",
+      "Direct line to the founders",
     ],
-    cta: "Book a Demo",
+    cta: "Talk to us",
     popular: false,
   },
 ];
@@ -90,7 +87,7 @@ const faqs = [
   {
     question: "How does billing work?",
     answer:
-      "We charge monthly or annually (save 20% with annual). You can upgrade, downgrade, or cancel at any time. If you go over your bride limit, we'll notify you and help you upgrade smoothly.",
+      "Simple monthly billing. You can upgrade, downgrade, or cancel at any time. If you go over your bride limit, we'll notify you and help you upgrade smoothly.",
   },
   {
     question: "Do you offer refunds?",
@@ -100,7 +97,7 @@ const faqs = [
   {
     question: "Can I import my existing bride data?",
     answer:
-      "Yes! Professional and Enterprise plans include CSV import. We also offer free data migration assistance for Enterprise customers. Our team will help you get set up smoothly.",
+      "Yes! Professional and Studio plans include CSV import, so you can bring over the brides you're already tracking. On Studio we'll handle the data migration with you. Bridal OS runs alongside Bridal Live — it doesn't pull from or change your POS data.",
   },
 ];
 
@@ -153,16 +150,9 @@ export default function PricingPage() {
           grow. Cancel anytime.
         </p>
 
-        {/* Annual/Monthly Toggle */}
-        <div className="mt-8 inline-flex items-center gap-3 rounded-full bg-white p-1 shadow-lg shadow-rose-200/30">
-          <button className="rounded-full bg-stone-900 px-6 py-2 text-sm font-semibold text-rose-50 transition">
-            Monthly
-          </button>
-          <button className="rounded-full px-6 py-2 text-sm font-semibold text-stone-600 transition hover:text-stone-900">
-            Annual
-            <span className="ml-2 text-xs text-emerald-600">(Save 20%)</span>
-          </button>
-        </div>
+        <p className="mt-6 text-sm font-medium text-stone-500">
+          Simple monthly pricing. No contracts, no setup fees.
+        </p>
       </section>
 
       {/* Pricing Cards */}
@@ -241,10 +231,11 @@ export default function PricingPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="mb-12 text-center">
             <h2 className="text-4xl font-bold text-stone-900">
-              Everything you need to run your boutique
+              Everything your brides experience, in one place
             </h2>
             <p className="mt-4 text-lg text-stone-600">
-              All plans include these core features
+              The bride-facing layer that runs alongside Bridal Live. All plans
+              include these core features.
             </p>
           </div>
 
@@ -288,7 +279,7 @@ export default function PricingPage() {
               {
                 icon: Shield,
                 title: "Secure & Private",
-                description: "SOC2-ready infrastructure",
+                description: "Token-based bride portals; POS data stays in Bridal Live",
               },
             ].map((feature) => (
               <div
