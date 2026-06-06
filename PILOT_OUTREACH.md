@@ -1,55 +1,74 @@
 # Bridal OS — Pilot Outreach Kit
 
-> **Goal:** book 5 pilot boutiques that use **Bridal Live** and already feel the
-> post-sale chaos. You're not selling "software" — you're selling **less bride
-> confusion after the dress is sold.**
+> **Goal:** run **~20 discovery calls** (not 5 demos) to learn whether the
+> post-sale bride-journey pain is real and unsolved. You're hunting for
+> boutiques where the journey **leaks out of their system** — even if they
+> already have a POS or a client portal.
 
-**Core positioning (use everywhere):** Bridal OS is the **bride-facing layer on
-top of Bridal Live**, not a replacement. Bridal Live keeps POS, inventory, and
-orders. Bridal OS gives each bride a private timeline for fittings, payments,
-documents, and next steps.
+⚠️ **Competitive reality:** **BridalLive already has a Client Portal.** Do **not**
+pitch "the bride portal BridalLive lacks." Lead with a **diagnostic question**,
+not a claim.
+
+**Honest positioning (use everywhere):** Bridal OS is a **lightweight bride
+journey page** — fittings, balances, documents, and next steps — that works
+**alongside** the POS you already use (BridalLive, Square, Shopify, Lightspeed,
+spreadsheets). It does **not** replace your register, inventory, orders,
+accounting, or an existing client portal.
+
+---
+
+## The diagnostic that decides everything
+
+Every message and call opens with a version of:
+
+> **"Are you using BridalLive Client Portal today — or do fittings, balances,
+> documents, and next steps still mostly run through texts, calls, and staff
+> notes after the dress is sold?"**
+
+Sort every conversation into one of three buckets:
+
+| Bucket | Meaning | Action |
+|---|---|---|
+| **Not using a client portal** | Best first target | Demo Bridal OS |
+| **Using one but still chaotic** | Premium "concierge" target | Dig into the leak, then demo against it |
+| **Using one, works great** | Not a prospect | Thank, ask for referral, move on |
 
 ---
 
 ## Who to target
 
-✅ Bridal boutiques using **Bridal Live** · 2–10 staff · 50–500 brides/year ·
-active Instagram · lots of fittings/alterations · owner-operated or small team.
+✅ Bridal boutiques · 2–10 staff · 50–500 brides/year · active Instagram · lots
+of fittings/alterations · owner-operated. **Especially** shops on BridalLive who
+**haven't turned on / fully rolled out Client Portal**, or shops on other POS
+systems (Square, Shopify, Lightspeed, spreadsheets).
 
-🚫 Avoid: big chains · tiny appointment-only/low-volume shops · shops with
-custom internal software · general wedding planners.
+🚫 Avoid: happy BridalLive Client Portal power users · big chains · tiny
+low-volume appointment-only shops · shops with custom internal software ·
+general wedding planners.
 
 ---
 
 ## 1) Cold email
 
-**Subject:** A bride portal that works *with* Bridal Live (not instead of it)
+**Subject:** Quick question about your bride setup
 
 Hi {{FirstName}},
 
-I'll keep this short. You already run {{BoutiqueName}} on Bridal Live for the
-sale, inventory, and orders — and that part works. The mess tends to be
-*everything after* the dress is sold: fittings, alterations, balance payments,
-and the brides texting to ask "when's my next appointment" and "how much do I
-still owe."
+Quick question, not a pitch: after a bride buys her dress at {{BoutiqueName}},
+**what does she actually see** for her fittings, balance, documents, and next
+steps — a portal, or mostly texts/calls/staff notes?
 
-We're building **Bridal OS** to fix exactly that — a private, branded portal for
-each bride where she sees her timeline, fittings, payment schedule, and
-documents in one place. It runs **alongside** Bridal Live. It doesn't replace
-your POS or touch your inventory.
+I ask because I'm building **Bridal OS** — a lightweight bride journey page that
+gives each bride one calm place for exactly that. It works **alongside** your
+POS (BridalLive, Square, Shopify, whatever you use). It does **not** replace your
+register, inventory, or orders — and if you already run BridalLive's Client
+Portal and brides love it, you probably don't need me.
 
-We're hand-picking **5 boutiques to pilot it free for 30 days**, set it up with
-them, and learn what actually helps. Given {{BoutiqueName}}'s volume, I think
-you'd be a great fit.
-
-Worth a 15-minute look? I can show you the bride's view on my phone — it's the
-part owners react to.
+I'm looking for **5 boutique owners to sanity-check whether this is genuinely
+useful or just redundant** with what they already have. Worth a 15-minute look?
 
 — {{YourName}}
 {{phone}} · {{link}}
-
-*P.S. Not a Bridal Live competitor. Think of it as the bride's side of the
-counter, modernized.*
 
 ---
 
@@ -57,27 +76,29 @@ counter, modernized.*
 
 Hi {{FirstName}}! Love what you do at {{BoutiqueName}} 👗
 
-Quick one — we're building a tool that gives each of your brides a private
-portal for their fittings, payments, and what's-next, so they stop texting to
-ask. It works **alongside Bridal Live** (doesn't replace your POS).
+Genuine question, no pitch: after a bride buys her dress, does she have a portal
+for her fittings/balance/documents — or is it mostly texts and calls?
 
-We're picking 5 boutiques to pilot it free for 30 days. Could I send you a
-30-second look at the bride's view? No pressure either way 🙏
+I'm building a simple bride journey page for exactly that gap. Works **alongside**
+your POS, doesn't replace anything. If you already use a client portal and it
+works great, you won't need it — that's part of what I'm trying to learn. Open to
+a 30-second look? 🙏
 
 ---
 
-## 3) Follow-up (send 3–4 days after no reply)
+## 3) Follow-up (3–4 days after no reply)
 
-**Subject:** Re: A bride portal that works *with* Bridal Live
+**Subject:** Re: Quick question about your bride setup
 
-Hi {{FirstName}}, floating this back up in case it got buried.
+Hi {{FirstName}}, floating this back up with the one question that matters:
 
-One question to make it concrete: **how do your brides currently check their
-next fitting or their remaining balance?** If the honest answer is "they call or
-text us," that's the exact thing we take off your team's plate.
+**how do your brides currently check their next fitting or remaining balance?**
+If it's "they text or call us," that's the exact gap I'm exploring. If you've
+already got a client portal handling it, just say so and I'll get out of your
+inbox — no hard sell.
 
-Still have 2 of the 5 free pilot spots open. Happy to do a 15-min screen share
-this week — or just reply "send it" and I'll email the 30-second walkthrough.
+Still have a couple of the 5 free pilot spots open. "Send it" and I'll email a
+30-second walkthrough.
 
 — {{YourName}}
 
@@ -85,16 +106,16 @@ this week — or just reply "send it" and I'll email the 30-second walkthrough.
 
 ## 4) 30-second phone / voicemail script
 
-> "Hi {{FirstName}}, this is {{YourName}} — I'll be quick. You run
-> {{BoutiqueName}} on Bridal Live, right? We built a bride-facing portal that
-> sits *on top* of Bridal Live — it doesn't replace your POS. Each bride gets a
-> private page with her fittings, payment schedule, and documents, so she stops
-> calling to ask. We're giving 5 boutiques a free 30-day pilot and setting it up
-> for them. Can I send you a 30-second look at the bride's view? What's the best
-> email?"
+> "Hi {{FirstName}}, this is {{YourName}} — 30 seconds. Quick question about
+> {{BoutiqueName}}: after a bride buys her dress, does she have a portal for her
+> fittings and balance, or is it mostly texts and calls? I'm building a simple
+> bride journey page for that gap — it works alongside your POS and doesn't
+> replace anything. If you already run a client portal and love it, you won't
+> need it. I'm giving 5 boutiques a free 30-day pilot to tell me if it's useful
+> or redundant. Can I send a 30-second look? Best email?"
 
-If they engage, the only goal of the call is to **book the 15-minute demo** (see
-`DEMO_SCRIPT.md`). Don't pitch features on the phone — book the screen share.
+Goal of the call = **qualify the bucket** and, if they're a fit, **book the
+15-minute demo** (see `DEMO_SCRIPT.md`). Don't pitch features on the phone.
 
 ---
 
@@ -103,20 +124,37 @@ If they engage, the only goal of the call is to **book the 15-minute demo** (see
 - **Free for 30 days**, then **$49/mo or $99/mo**.
 - **Concierge onboarding** — you set it up with them.
 - **Cancel anytime.**
-- In return: one honest **feedback call**, and permission to use anonymized
-  learnings / a testimonial **only if they're happy**.
+- In return: one honest **feedback call**, and a testimonial **only if happy**.
 - ❌ No annual. ❌ No enterprise. ❌ Don't over-negotiate price this week.
+- ✅ Say out loud: *"I'm not sure this is useful if your client portal already
+  works — that's exactly what I'm trying to learn."* That line builds trust.
 
-You're validating one question: do owners say **"Yes — this is exactly the gap
-Bridal Live doesn't solve"**? If 5 boutiques don't say that, **reposition before
+---
+
+## Discovery call script (the real goal — 20 of these)
+
+1. "Do you use BridalLive? Is **Client Portal** turned on?"
+2. "What does a bride **see** after she buys the dress?"
+3. "Where do **fittings, balances, documents, alterations** live?"
+4. "What still comes in by **text or call**?"
+5. "What does your team **forget or chase**?"
+6. "Would a simple bride journey page **help**, or **duplicate** what you have?"
+7. "Would you pay **$49–$99/mo** for it?"
+8. "Would you use it **instead of**, **alongside**, or **not at all** vs your
+   current portal?"
+
+**You're validating one hypothesis:** *a meaningful number of boutiques either
+don't use a client portal, or are unhappy enough with their post-sale workflow
+to pay for a simpler layer.* If 20 calls don't confirm it — **reposition before
 building anything more.**
 
 ---
 
-## Simple tracking (copy into a sheet)
+## Tracking sheet
 
-| Boutique | Uses Bridal Live? | Channel | Sent | Replied | Demo booked | Pilot? | Notes |
-|----------|-------------------|---------|------|---------|-------------|--------|-------|
+| Boutique | POS | Client Portal? (Y/N/underused) | Bucket | Channel | Sent | Replied | Call booked | Pilot? | The leak (notes) |
+|----------|-----|--------------------------------|--------|---------|------|---------|-------------|--------|------------------|
 
-**This week's targets:** build a list of ~100 → message 30 → book 5 demos →
-show the bride portal → listen for *"we actually need this."*
+**This week:** list ~100 → message 30 → book **20 discovery calls** → demo only
+the qualified buckets → listen for *"we have the tools but the journey still
+leaks."*

@@ -70,6 +70,16 @@ const plans = [
 
 const faqs = [
   {
+    question: "Does Bridal OS replace BridalLive or my POS?",
+    answer:
+      "No. Keep your POS — BridalLive, Square, Shopify, Lightspeed, or whatever runs your sale — as your source of truth for register, inventory, orders, and accounting. Bridal OS is a lightweight bride journey page for the fittings, balances, documents, and next steps that still happen outside it.",
+  },
+  {
+    question: "What if we already use BridalLive Client Portal?",
+    answer:
+      "Then Bridal OS may not be necessary — and we'd rather tell you that. It's most useful when parts of the bride journey still happen outside your current portal or POS, or when you want a simpler, more curated page for the bride.",
+  },
+  {
     question: "Is there a free trial?",
     answer:
       "Yes! All plans come with a 14-day free trial. No credit card required to start. You can explore the full product, add brides, and test all features before deciding.",
@@ -97,7 +107,7 @@ const faqs = [
   {
     question: "Can I import my existing bride data?",
     answer:
-      "Yes! Professional and Studio plans include CSV import, so you can bring over the brides you're already tracking. On Studio we'll handle the data migration with you. Bridal OS runs alongside Bridal Live — it doesn't pull from or change your POS data.",
+      "Yes! Professional and Studio plans include CSV import, so you can bring over the brides you're already tracking. On Studio we'll handle the data migration with you. Bridal OS runs alongside your POS — it doesn't pull from or change your existing system's data.",
   },
 ];
 
@@ -231,11 +241,11 @@ export default function PricingPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="mb-12 text-center">
             <h2 className="text-4xl font-bold text-stone-900">
-              Everything your brides experience, in one place
+              The bride journey, in one calm place
             </h2>
             <p className="mt-4 text-lg text-stone-600">
-              The bride-facing layer that runs alongside Bridal Live. All plans
-              include these core features.
+              A lightweight page for each bride that runs alongside the POS you
+              already use. All plans include these core features.
             </p>
           </div>
 
@@ -279,7 +289,7 @@ export default function PricingPage() {
               {
                 icon: Shield,
                 title: "Secure & Private",
-                description: "Token-based bride portals; POS data stays in Bridal Live",
+                description: "Token-based bride pages; your POS stays your source of truth",
               },
             ].map((feature) => (
               <div

@@ -104,21 +104,21 @@ export default function Home() {
         <div className="flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-stone-500 shadow-sm backdrop-blur">
             <ShieldCheck className="h-4 w-4 text-rose-500" />
-            Works alongside Bridal Live
+            Works alongside your existing POS
           </div>
           <div className="space-y-4">
             <h1 className="text-4xl leading-[1.05] text-stone-900 sm:text-5xl md:text-6xl">
-              The bride-facing layer
+              A calmer bride journey
               <span className="block font-semibold text-stone-900">
-                on top of Bridal Live
+                from sale to pickup
               </span>
             </h1>
             <p className="max-w-2xl text-lg leading-relaxed text-stone-700 md:text-xl">
-              Keep Bridal Live for your point of sale, inventory, special orders,
-              and accounting. Bridal OS adds the modern, bride-facing layer on
-              top &mdash; one calm place for each bride&apos;s timeline, fittings,
-              payment schedule, reminders, and documents. It&apos;s an add-on, not
-              a replacement.
+              Bridal OS gives each bride a beautiful private page for fittings,
+              balances, documents, and next steps &mdash; without replacing your
+              POS, inventory, register, or special-order workflow. For boutiques
+              where the bride journey still leaks into texts, sticky notes, and
+              staff memory after the dress is sold.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -154,7 +154,7 @@ export default function Home() {
               </div>
               <p className="font-serif text-2xl text-stone-900">Add-on</p>
               <p className="text-sm text-stone-600">
-                Bridal Live keeps running your back office
+                Keep the POS you already use
               </p>
             </div>
           </div>
@@ -257,9 +257,9 @@ export default function Home() {
             </h2>
           </div>
           <p className="max-w-xl text-stone-600">
-            Bridal OS covers everything the bride sees and touches between the
-            sale and the pickup &mdash; while Bridal Live keeps running your POS,
-            inventory, and special orders.
+            Bridal OS handles the post-sale bride journey &mdash; fittings,
+            balances, documents, and next steps &mdash; while your POS keeps
+            running the sale, inventory, and orders.
             </p>
           </div>
 
@@ -298,12 +298,12 @@ export default function Home() {
             </h2>
             <p className="text-rose-100/90">
               Replace the scattered spreadsheets, sticky notes, and group texts
-              you use to track each bride &mdash; while Bridal Live keeps running
-              your POS and inventory. Bridal OS keeps each bride on a calm,
+              you use to track each bride &mdash; while your POS keeps running the
+              sale and inventory. Bridal OS keeps each bride on a calm,
               transparent path.
             </p>
             <div className="inline-flex items-center gap-2 rounded-full bg-rose-100/10 px-4 py-2 text-sm font-semibold text-rose-100 ring-1 ring-rose-200/30">
-              Set up in an afternoon · Sits on top of Bridal Live
+              Set up in an afternoon · Works with your existing POS
             </div>
           </div>
           <div className="space-y-5">
@@ -336,14 +336,15 @@ export default function Home() {
               What it&apos;s for
             </p>
             <h2 className="text-3xl leading-tight text-stone-900 md:text-4xl">
-              Keep your back office. Modernize the bride experience.
+              For the bride journey that still leaks out of your system
             </h2>
             <p className="text-lg text-stone-700">
-              Bridal Live already handles your point of sale, inventory, and
-              special orders. Bridal OS sits on top to coordinate stylists,
-              tailors, and payments &mdash; and gives each bride a private portal
-              so she always knows what&apos;s next, without a single extra phone
-              call to your team.
+              Even with the tools you already run, parts of the journey tend to
+              live in texts, spreadsheets, and staff memory &mdash; fittings,
+              balances, alteration updates, documents, and bride reassurance.
+              Bridal OS gives each bride one calm page for all of it, so she
+              always knows what&apos;s next without an extra phone call to your
+              team.
             </p>
             <p className="text-sm text-stone-500">
               We&apos;re onboarding our first boutiques now. Join the pilot and
@@ -356,7 +357,7 @@ export default function Home() {
                 <p className="text-xs uppercase tracking-[0.2em] text-rose-200/80">
                   What Bridal OS handles
                 </p>
-                <p className="font-serif text-2xl">The bride-facing layer</p>
+                <p className="font-serif text-2xl">The post-sale journey</p>
               </div>
               <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-rose-100 ring-1 ring-rose-200/30">
                 Add-on
@@ -378,8 +379,33 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2 text-sm text-rose-200/90">
               <ShieldCheck className="h-4 w-4 text-rose-300" />
-              Secure, token-based bride portals. Your POS data stays in Bridal Live.
+              Secure, token-based bride pages. Your POS stays your source of truth.
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Already on BridalLive? — honest compatibility band */}
+      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-8 md:pb-12">
+        <div className="rounded-3xl border border-white/80 bg-white/80 px-6 py-8 shadow-sm backdrop-blur md:px-10 md:py-10">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+            <div className="md:w-1/3">
+              <p className="text-xs uppercase tracking-[0.3em] text-stone-500">
+                Already on BridalLive?
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-stone-900">
+                Keep it. We don&apos;t replace it.
+              </h2>
+            </div>
+            <p className="leading-relaxed text-stone-600 md:w-2/3">
+              BridalLive &mdash; including its Client Portal &mdash; can stay your
+              source of truth for the register, inventory, orders, and accounting.
+              Bridal OS is for boutiques that still coordinate parts of the bride
+              journey through texts, spreadsheets, sticky notes, or staff memory,
+              especially those not using a full client portal today. If your
+              current setup already handles all of it, you may not need us
+              &mdash; and we&apos;ll tell you so.
+            </p>
           </div>
         </div>
       </section>
@@ -431,12 +457,12 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="mb-12 text-center">
             <h2 className="text-4xl font-bold text-rose-50">
-              What Bridal OS adds on top of Bridal Live
+              A simpler bride journey page
             </h2>
             <p className="mt-4 text-lg text-rose-100">
-              Bridal Live keeps running your POS, inventory, and special orders.
-              Here&apos;s how the bride-facing layer compares to tracking brides in
-              spreadsheets or a generic CRM.
+              Bridal OS doesn&apos;t replace your POS. Here&apos;s how a
+              lightweight, no-login bride journey page compares to tracking brides
+              in spreadsheets or a generic CRM.
             </p>
           </div>
 
@@ -486,7 +512,7 @@ export default function Home() {
                     crm: false,
                   },
                   {
-                    feature: "Works alongside Bridal Live & your POS",
+                    feature: "Works alongside your existing POS",
                     bridal: true,
                     spreadsheet: false,
                     crm: false,
@@ -588,8 +614,12 @@ export default function Home() {
           <div className="space-y-6">
             {[
               {
-                q: "Does Bridal OS replace Bridal Live or my POS?",
-                a: "No. Bridal OS is an add-on, not a replacement. Keep Bridal Live for point of sale, inventory, special orders, and accounting. Bridal OS handles the bride-facing side: the private portal, timeline, fittings, alterations, payment schedules, reminders, and documents. The two run side by side.",
+                q: "Does Bridal OS replace BridalLive or my POS?",
+                a: "No. Keep your POS — BridalLive, Square, Shopify, Lightspeed, or whatever runs your sale — as your source of truth for register, inventory, orders, and accounting. Bridal OS is a lightweight bride journey page for the fittings, balances, documents, and next steps that still happen outside it.",
+              },
+              {
+                q: "What if we already use BridalLive Client Portal?",
+                a: "Then Bridal OS may not be necessary — and we'd rather tell you that than oversell. It's most useful when parts of the bride journey still happen outside your current portal or POS, or when you want a simpler, more curated page for the bride.",
               },
               {
                 q: "Is there a free trial?",
@@ -613,7 +643,7 @@ export default function Home() {
               },
               {
                 q: "Can I import my existing bride data?",
-                a: "Yes! Professional and Studio plans include CSV import, so you can bring over the brides you're already tracking. Bridal OS runs alongside Bridal Live — it doesn't pull from or change your POS data.",
+                a: "Yes! Professional and Studio plans include CSV import, so you can bring over the brides you're already tracking. Bridal OS runs alongside your POS — it doesn't pull from or change your existing system's data.",
               },
             ].map((faq, idx) => (
               <div
